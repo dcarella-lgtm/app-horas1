@@ -163,21 +163,48 @@ export function renderEmpleadoData(registros) {
         
         // 1. Días de la semana desde r.fecha
         let fechaLimpia = r.fecha || '-';
+        let isSunday = false;
+        let isSaturday = false;
+        let isWorkday = true;
+        
         if (r.fecha) {
             const temp = new Date(r.fecha + 'T00:00:00');
             if (!isNaN(temp.getTime())) {
+                const diaInt = temp.getDay();
+                isSunday = diaInt === 0;
+                isSaturday = diaInt === 6;
+                isWorkday = diaInt >= 1 && diaInt <= 5;
                 const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-                fechaLimpia = `<strong>${dias[temp.getDay()]}</strong> <span style="color:#777; font-size:0.9em; margin-left: 4px;">${r.fecha.split('-').reverse().join('/')}</span>`;
+                fechaLimpia = `<strong>${dias[diaInt]}</strong> <span style="color:#777; font-size:0.9em; margin-left: 4px;">${r.fecha.split('-').reverse().join('/')}</span>`;
             }
         }
 
-        // 2. Actividad: Evaluar "Sin actividad"
         const actIngreso = r.hora_ingreso === 0 || r.hora_ingreso === null || r.hora_ingreso === "" ? null : convertirHoraDecimal(r.hora_ingreso);
         const actSalida = r.hora_salida === 0 || r.hora_salida === null || r.hora_salida === "" ? null : convertirHoraDecimal(r.hora_salida);
         
+        const isNoActivity = !actIngreso && !actSalida;
+        let isJustified = false;
+        let actMsg = '⚠️ Sin actividad / Revisar';
+        let actColor = '#856404';
+        let actBg = '#fff3cd';
+
+        // Evaluar justificaciones
+        const isWeekend = isSunday || isSaturday;
+        if (r.ausencias && String(r.ausencias).trim() !== '') {
+            isJustified = true;
+            actMsg = `ℹ️ ${String(r.ausencias).trim()}`;
+            actColor = '#0056b3';
+            actBg = '#e8f4fd';
+        } else if (isWeekend && isNoActivity) {
+            isJustified = true;
+            actMsg = `⏸️ Fin de Semana`;
+            actColor = '#555555';
+            actBg = '#f0f0f0';
+        }
+
         let actHTML = '';
-        if (!actIngreso && !actSalida) {
-            actHTML = `<td colspan="2" style="padding: 12px; text-align: center; border-bottom: 1px solid #eee; border-right: 1px solid #ddd; background-color: #fff3cd; color: #856404; font-size: 0.85em; font-weight: bold;">⚠️ Sin actividad / Revisar</td>`;
+        if (isNoActivity) {
+            actHTML = `<td colspan="2" style="padding: 12px; text-align: center; border-bottom: 1px solid #eee; border-right: 1px solid #ddd; background-color: ${actBg}; color: ${actColor}; font-size: 0.85em; font-weight: bold;">${actMsg}</td>`;
         } else {
             actHTML = `
                 <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color: #555;">${actIngreso || '-'}</td>
@@ -217,23 +244,11 @@ export function renderEmpleadoData(registros) {
         // 4. Lógica de Priorización Visual (Error, Warning, Ok)
         let rowStatus = 'ok';
         
-        let isSunday = false;
-        let isWorkday = false;
-        if (r.fecha) {
-            const temp = new Date(r.fecha + 'T00:00:00');
-            if (!isNaN(temp.getTime())) {
-                const diaInt = temp.getDay();
-                isSunday = diaInt === 0;
-                isWorkday = diaInt >= 1 && diaInt <= 5;
-            }
-        }
-
         const diff50 = Number(r.horas_50_auto || 0) !== Number(r.horas_50_manager || 0);
         const diff100 = Number(r.horas_100_auto || 0) !== Number(r.horas_100_manager || 0);
         const diffFer = Number(r.horas_feriado_auto || 0) !== Number(r.horas_feriado_manager || 0);
         const hasDiff = diff50 || diff100 || diffFer;
         
-        const isNoActivity = !actIngreso && !actSalida;
         const sumAuto = Number(r.horas_50_auto || 0) + Number(r.horas_100_auto || 0) + Number(r.horas_feriado_auto || 0);
         const sumMgr = Number(r.horas_50_manager || 0) + Number(r.horas_100_manager || 0) + Number(r.horas_feriado_manager || 0);
         const isTodoCero = sumAuto === 0 && sumMgr === 0 && isNoActivity;
@@ -242,7 +257,7 @@ export function renderEmpleadoData(registros) {
         if (hasDiff || (isSunday && Number(r.horas_50_manager || 0) > 0)) {
             rowStatus = 'error';
             __empRowErrors++;
-        } else if (isNoActivity || (isTodoCero && isWorkday)) {
+        } else if ((isNoActivity && !isJustified) || (isTodoCero && isWorkday && !isJustified)) {
             rowStatus = 'warning';
             __empRowWarnings++;
         }

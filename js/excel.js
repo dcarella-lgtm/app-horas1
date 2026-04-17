@@ -104,7 +104,7 @@ export function leerExcelProcesado(file) {
                     horas_100_auto: ['100_auto', '100'],
                     horas_feriado_auto: ['feriado_auto', 'feriado'],
                     
-                    ausencias: ['ausencia', 'falta'],
+                    ausencias: ['ausencia', 'falta', 'vacaciones', 'licencia', 'motivo', 'justificacion'],
                     comentarios: ['comentario', 'observacion'],
                     estado: ['estado', 'status']
                 };
