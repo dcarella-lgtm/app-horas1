@@ -18,8 +18,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Validar extensión del archivo
         const ext = file.name.split('.').pop().toLowerCase();
-        if (!['xlsx', 'xls'].includes(ext)) {
-            showToast("Archivo inválido. Solo se aceptan .xlsx o .xls", "error");
+        if (!['xlsx', 'xls', 'xlsm'].includes(ext)) {
+            showToast("Archivo inválido. Solo se aceptan .xlsx, .xls o .xlsm", "error");
             fileInput.value = "";
             return;
         }
