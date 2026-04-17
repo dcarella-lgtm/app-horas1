@@ -6,8 +6,7 @@
 const supabaseUrl = "https://edfrbxgzeknkqrzscgqk.supabase.co";
 const supabaseKey = "sb_publishable_EzjcSjadXXDzh0SI35zxmA_pbHzaw-T";
 
-const { createClient } = window.supabase;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 console.log("URL:", supabaseUrl);
 
