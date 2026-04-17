@@ -78,7 +78,25 @@ document.addEventListener("DOMContentLoaded", async () => {
         allRecords = response.data;
         
         const dashboardFilters = document.getElementById("dashboard-filters");
-        if (dashboardFilters) dashboardFilters.style.display = 'block';
+        if (dashboardFilters) dashboardFilters.style.display = 'flex';
+
+        const actualizarContador = () => {
+             const contador = document.getElementById('contador-empleados');
+             if (contador) {
+                 const pendientes = allRecords.filter(r => r.estado === 'pendiente');
+                 const legajosPendientes = new Set(pendientes.map(r => r.legajo));
+                 if (legajosPendientes.size > 0) {
+                     contador.innerText = `⚠️ ${legajosPendientes.size} empleado(s) por revisar`;
+                     contador.style.color = '#d32f2f';
+                     contador.style.display = 'inline-block';
+                 } else {
+                     contador.innerText = `✅ Al día`;
+                     contador.style.color = '#388e3c';
+                     contador.style.display = 'inline-block';
+                 }
+             }
+        };
+        actualizarContador();
 
         const btnExportar = document.getElementById("btn-exportar");
         if (btnExportar) {
@@ -107,7 +125,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
         }
         
-        renderRegistros(response.data);
+        const filtroSelect = document.getElementById("filter-estado");
+        const filtroInicial = filtroSelect ? filtroSelect.value : '';
+        if (filtroInicial) {
+            renderRegistros(allRecords.filter(r => r.estado === filtroInicial));
+        } else {
+            renderRegistros(allRecords);
+        }
       } else {
         showError(false);
       }
@@ -128,7 +152,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (!legajoParam) {
           document.getElementById('emp-empty-state').style.display = 'block';
-          document.getElementById('emp-empty-state').innerText = "Falta el legajo del empleado. Por favor, selecciona uno desde el Dashboard.";
+          document.getElementById('emp-empty-state').innerText = "Falta el legajo. Redirigiendo al Dashboard...";
+          showToast("Selecciona un empleado desde la tabla del Dashboard.", "warning");
+          setTimeout(() => { window.location.href = 'dashboard.html'; }, 2000);
           return;
       }
 

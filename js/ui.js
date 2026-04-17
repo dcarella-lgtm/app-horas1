@@ -43,9 +43,18 @@ export function renderRegistros(registros) {
     registros.forEach(r => {
         const tr = document.createElement('tr');
         tr.style.cursor = 'pointer';
-        tr.title = 'Click para editar horas de este empleado';
-        tr.onmouseover = () => tr.style.backgroundColor = '#f1f8ff';
-        tr.onmouseout = () => tr.style.backgroundColor = 'transparent';
+        tr.style.transition = 'all 0.2s ease-in-out';
+        tr.title = 'Click para revisar y editar horas de este empleado';
+        tr.onmouseover = () => { 
+            tr.style.backgroundColor = '#e8f4fd'; 
+            tr.style.boxShadow = 'inset 0 0 8px rgba(0, 86, 179, 0.15)'; 
+            tr.style.transform = 'scale(1.002)';
+        };
+        tr.onmouseout = () => { 
+            tr.style.backgroundColor = 'transparent'; 
+            tr.style.boxShadow = 'none'; 
+            tr.style.transform = 'none';
+        };
         
         // Redirección con param legajo al hacer clic en fila
         tr.onclick = () => { window.location.href = `empleado.html?legajo=${r.legajo}`; };
