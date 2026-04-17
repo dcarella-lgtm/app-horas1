@@ -155,3 +155,59 @@ export function renderEmpleadoData(registros) {
         tbody.appendChild(tr);
     });
 }
+
+// ============================================================
+// GENERADOR DE FEEDBACK VISUAL (TOASTS) Módulo Exportable
+// ============================================================
+export function showToast(message, type = 'info') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        // Interfaz flotante arriba a la derecha
+        container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.innerText = message;
+    
+    // Paleta de colores requerida
+    let bg = '#757575'; // info, gris
+    if (type === 'success') bg = '#4CAF50'; // éxito, verde
+    else if (type === 'error') bg = '#F44336'; // error, rojo
+    else if (type === 'warning') bg = '#FF9800'; // advertencia, naranja
+
+    toast.style.cssText = `
+        background-color: ${bg};
+        color: white;
+        padding: 15px 25px;
+        border-radius: 6px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        font-family: inherit;
+        font-weight: 500;
+        font-size: 15px;
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        max-width: 320px;
+        word-wrap: break-word;
+        pointer-events: auto;
+    `;
+
+    container.appendChild(toast);
+
+    // Animacion Entrada
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+    });
+
+    // Auto eliminar luego de 3-4 segundos (3.5s)
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-20px)';
+        // Remover el elemento del DOM tras terminar la transicion
+        setTimeout(() => toast.remove(), 300);
+    }, 3500); 
+}
