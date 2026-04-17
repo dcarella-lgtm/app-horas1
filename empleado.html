@@ -23,7 +23,8 @@
     <main>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
             <h2>Detalle Empleado: <span id="empleado-legajo-title" style="color:#0056b3;">...</span> <span id="empleado-estado-badge" style="font-size:0.65em; vertical-align: middle; margin-left: 10px; font-weight:normal;"></span></h2>
-            <div>
+            <div style="display: flex; align-items: center;">
+                <span id="empleado-status-counters" style="margin-right: 15px; font-weight: bold; background: #fff; padding: 6px 12px; border-radius: 5px; border: 1px solid #ddd; font-size: 0.9em; display: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"></span>
                 <button id="btn-aprobar-empleado" style="padding: 6px 14px; background: #28a745; border: none; cursor:pointer; color: white; border-radius:4px; margin-right: 10px; display:none; font-weight:bold;">✅ Aprobar Empleado</button>
                 <button onclick="window.history.back()" style="padding: 5px 10px; background: transparent; border: 1px solid #0056b3; cursor:pointer; color: #0056b3; border-radius:4px;">Volver</button>
             </div>

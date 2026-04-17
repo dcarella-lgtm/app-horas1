@@ -232,7 +232,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       const btnAprobar = document.getElementById('btn-aprobar-empleado');
       if (btnAprobar) {
           btnAprobar.addEventListener('click', async () => {
-              const confirmacion = confirm("¿Aprobar todas las horas cargadas de este empleado? No podrá editarlas luego.");
+              if (btnAprobar.disabled) return;
+
+              let confirmText = "¿Aprobar todas las horas cargadas de este empleado? No podrá editarlas luego.";
+              if (btnAprobar.dataset.warnings === 'true') {
+                  confirmText = "⚠️ ATENCIÓN: Al menos un día tiene advertencias sin resolver.\n\n¿Deseas APROBAR el reporte de todas formas?";
+              }
+
+              const confirmacion = confirm(confirmText);
               if (!confirmacion) return;
 
               btnAprobar.innerText = "Aprobando... ⏳";

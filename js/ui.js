@@ -155,6 +155,9 @@ export function renderEmpleadoData(registros) {
 
     const isDisabled = todosAprobados;
 
+    let __empRowErrors = 0;
+    let __empRowWarnings = 0;
+
     registros.forEach(r => {
         const tr = document.createElement('tr');
         
@@ -211,13 +214,50 @@ export function renderEmpleadoData(registros) {
             return `<input type="text" class="edit-input" data-id="${r.id}" data-field="${id}" value="${val || ''}" ${disabledAttr} style="background-color:${bgColor}; width: 100%; padding: 5px; border: 1px solid #ccc; border-radius:3px;">`;
         };
 
-        // 4. Lógica "Alertas Leves" cuando todo es 0
+        // 4. Lógica de Priorización Visual (Error, Warning, Ok)
+        let rowStatus = 'ok';
+        
+        let isSunday = false;
+        let isWorkday = false;
+        if (r.fecha) {
+            const temp = new Date(r.fecha + 'T00:00:00');
+            if (!isNaN(temp.getTime())) {
+                const diaInt = temp.getDay();
+                isSunday = diaInt === 0;
+                isWorkday = diaInt >= 1 && diaInt <= 5;
+            }
+        }
+
+        const diff50 = Number(r.horas_50_auto || 0) !== Number(r.horas_50_manager || 0);
+        const diff100 = Number(r.horas_100_auto || 0) !== Number(r.horas_100_manager || 0);
+        const diffFer = Number(r.horas_feriado_auto || 0) !== Number(r.horas_feriado_manager || 0);
+        const hasDiff = diff50 || diff100 || diffFer;
+        
+        const isNoActivity = !actIngreso && !actSalida;
         const sumAuto = Number(r.horas_50_auto || 0) + Number(r.horas_100_auto || 0) + Number(r.horas_feriado_auto || 0);
         const sumMgr = Number(r.horas_50_manager || 0) + Number(r.horas_100_manager || 0) + Number(r.horas_feriado_manager || 0);
-        
-        if (sumAuto === 0 && sumMgr === 0 && !actIngreso && !actSalida) {
-             tr.style.opacity = '0.5';
-             tr.style.backgroundColor = '#fafafa';
+        const isTodoCero = sumAuto === 0 && sumMgr === 0 && isNoActivity;
+
+        // Evaluar reglas de negocio para UX
+        if (hasDiff || (isSunday && Number(r.horas_50_manager || 0) > 0)) {
+            rowStatus = 'error';
+            __empRowErrors++;
+        } else if (isNoActivity || (isTodoCero && isWorkday)) {
+            rowStatus = 'warning';
+            __empRowWarnings++;
+        }
+
+        // Aplicar estilos según clasificación
+        let msgFilas = '';
+        if (rowStatus === 'error') {
+            tr.style.backgroundColor = '#ffe5e5';
+            msgFilas = '<div style="color: #c62828; font-size: 0.8em; margin-top: 6px;"><strong>⚠ Diferencia detectada → revisar</strong></div>';
+        } else if (rowStatus === 'warning') {
+            tr.style.backgroundColor = '#fff8e1';
+            msgFilas = '<div style="color: #856404; font-size: 0.8em; margin-top: 6px;"><strong>⚠ Revisar ausencia o inconsistencia</strong></div>';
+            if (isTodoCero) tr.style.opacity = '0.7'; 
+        } else {
+            msgFilas = '<div style="color: #388e3c; font-size: 0.8em; margin-top: 6px;">✔ Correcto</div>';
         }
 
         tr.innerHTML = `
@@ -234,10 +274,48 @@ export function renderEmpleadoData(registros) {
             </td>
             <td style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">
                 ${formatText(r.comentarios, 'comentarios')}
+                ${msgFilas}
             </td>
         `;
         tbody.appendChild(tr);
     });
+
+    // 5. Actualizar los contadores superiores y lógica del botón Aprobar
+    const counterBadge = document.getElementById('empleado-status-counters');
+    if (counterBadge) {
+        if (__empRowErrors === 0 && __empRowWarnings === 0) {
+            counterBadge.style.display = 'none';
+        } else {
+            counterBadge.style.display = 'inline-block';
+            let str = [];
+            
+            if (__empRowErrors > 0) {
+                str.push(`🔴 ${__empRowErrors} error${__empRowErrors>1?'es':''}`);
+                str.push(`❌ Existen errores que deben resolverse antes de aprobar`);
+            } else if (__empRowWarnings > 0) {
+                str.push(`🟡 ${__empRowWarnings} para revisar`);
+                str.push(`⚠️ Hay días que requieren revisión`);
+            }
+            
+            counterBadge.innerHTML = str.join(' | ');
+        }
+    }
+
+    if (btnAprobar && !isDisabled) {
+        if (__empRowErrors > 0) {
+            btnAprobar.disabled = true;
+            btnAprobar.innerText = "❌ Resolver errores para aprobar";
+            btnAprobar.style.opacity = '0.6';
+            btnAprobar.style.cursor = 'not-allowed';
+            btnAprobar.dataset.warnings = 'false';
+        } else {
+            btnAprobar.disabled = false;
+            btnAprobar.innerText = "✅ Aprobar Empleado";
+            btnAprobar.style.opacity = '1';
+            btnAprobar.style.cursor = 'pointer';
+            btnAprobar.dataset.warnings = __empRowWarnings > 0 ? 'true' : 'false';
+        }
+    }
 }
 
 // ============================================================
