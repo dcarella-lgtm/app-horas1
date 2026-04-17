@@ -3,8 +3,8 @@
 // ============================================================
 // CONFIGURACIÓN — Reemplazar con tus credenciales reales
 // ============================================================
-const supabaseUrl = "TU_URL";
-const supabaseKey = "TU_ANON_KEY";
+const supabaseUrl = "https://edfrbxgzeknkqrzscgqk.supabase.co";
+const supabaseKey = "sb_publishable_EzjcSjadXXDzh0SI35zxmA_pbHzaw-T";
 
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
