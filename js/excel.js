@@ -198,8 +198,7 @@ export function exportarExcelLiquidacion(registros) {
     if (!registros || registros.length === 0) return;
 
     if (typeof window.XLSX === 'undefined') {
-        alert("Error crítico: Librería SheetJS original no se encuentra cargada. Revisa tu CDN.");
-        return;
+        throw new Error("Librería SheetJS no cargada. Revisa que el CDN esté incluido en esta página.");
     }
 
     // 1. Agrupar la sumatoria de horas por legajo

@@ -16,6 +16,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         const file = e.target.files[0];
         if (!file) return;
 
+        // Validar extensión del archivo
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!['xlsx', 'xls'].includes(ext)) {
+            showToast("Archivo inválido. Solo se aceptan .xlsx o .xls", "error");
+            fileInput.value = "";
+            return;
+        }
+
         showToast("Procesando archivo Excel... ⏳", "info");
 
         const data = await leerExcelProcesado(file);
@@ -87,9 +95,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 btnExportar.innerText = "Calculando... ⏳";
                 setTimeout(() => {
-                    exportarExcelLiquidacion(aprobados);
-                    btnExportar.innerText = "📊 Exportar Aprobados";
-                    showToast("Exportación a Excel completada.", "success");
+                    try {
+                        exportarExcelLiquidacion(aprobados);
+                        btnExportar.innerText = "📊 Exportar Aprobados";
+                        showToast("Exportación a Excel completada.", "success");
+                    } catch (err) {
+                        btnExportar.innerText = "📊 Exportar Aprobados";
+                        showToast("Error exportando: " + err.message, "error");
+                    }
                 }, 500); 
             });
         }

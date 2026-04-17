@@ -123,16 +123,20 @@ export function renderEmpleadoData(registros) {
         btnGuardar.style.display = todosAprobados ? 'none' : 'inline-block';
     }
 
-    const disableStr = todosAprobados ? 'disabled style="background-color:#f9f9f9;' : 'style="background-color:#fff;';
+    const isDisabled = todosAprobados;
 
     registros.forEach(r => {
         const tr = document.createElement('tr');
         
         const formatInput = (val, id) => {
-            return `<input type="number" step="0.5" class="edit-input" data-id="${r.id}" data-field="${id}" value="${val || 0}" ${disableStr} width: 70px; padding: 5px; text-align:right; border: 1px solid #ccc; border-radius:3px;">`;
+            const disabledAttr = isDisabled ? 'disabled' : '';
+            const bgColor = isDisabled ? '#f9f9f9' : '#fff';
+            return `<input type="number" step="0.5" class="edit-input" data-id="${r.id}" data-field="${id}" value="${val || 0}" ${disabledAttr} style="background-color:${bgColor}; width: 70px; padding: 5px; text-align:right; border: 1px solid #ccc; border-radius:3px;">`;
         };
         const formatText = (val, id) => {
-            return `<input type="text" class="edit-input" data-id="${r.id}" data-field="${id}" value="${val || ''}" ${disableStr} width: 100%; padding: 5px; border: 1px solid #ccc; border-radius:3px;">`;
+            const disabledAttr = isDisabled ? 'disabled' : '';
+            const bgColor = isDisabled ? '#f9f9f9' : '#fff';
+            return `<input type="text" class="edit-input" data-id="${r.id}" data-field="${id}" value="${val || ''}" ${disabledAttr} style="background-color:${bgColor}; width: 100%; padding: 5px; border: 1px solid #ccc; border-radius:3px;">`;
         };
 
         tr.innerHTML = `
@@ -159,7 +163,7 @@ export function renderEmpleadoData(registros) {
 // ============================================================
 // GENERADOR DE FEEDBACK VISUAL (TOASTS) Módulo Exportable
 // ============================================================
-export function showToast(message, type = 'info') {
+function showToast(message, type = 'info') {
     let container = document.getElementById('toast-container');
     if (!container) {
         container = document.createElement('div');
@@ -211,3 +215,6 @@ export function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 300);
     }, 3500); 
 }
+
+// Exportación explícita al final del archivo para máxima compatibilidad ES
+export { showToast };
