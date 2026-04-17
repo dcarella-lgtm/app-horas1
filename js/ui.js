@@ -24,6 +24,27 @@ function toggleStates(prefix, state) {
     }
 }
 
+// Convertidor de decimal de Excel (0-1) a formato HH:mm (solo propósitos visuales)
+export function convertirHoraDecimal(valor) {
+    if (valor === null || valor === undefined || valor === "") return "-";
+    const num = Number(valor);
+    if (isNaN(num)) return valor; // Si por algún motivo ya viene como texto "12:00", lo deja intacto
+
+    // Excel guarda horas como fracción de un día (0 a 1)
+    const hoursFloat = num * 24;
+    const hours = Math.floor(hoursFloat);
+    const minsFloat = (hoursFloat - hours) * 60;
+    const mins = Math.round(minsFloat);
+    
+    // Si da exactamente 24h y no es acumulativo de días, usualmente redondeamos a 00
+    const calcH = hours >= 24 ? 0 : hours;
+
+    const hh = String(calcH).padStart(2, '0');
+    const mm = String(mins).padStart(2, '0');
+
+    return `${hh}:${mm}`;
+}
+
 export function showLoading(isEmpleado = false) { toggleStates(isEmpleado ? 'emp' : '', 'loading'); }
 export function showEmpty(isEmpleado = false) { toggleStates(isEmpleado ? 'emp' : '', 'empty'); }
 export function showError(isEmpleado = false) { toggleStates(isEmpleado ? 'emp' : '', 'error'); }
@@ -137,29 +158,79 @@ export function renderEmpleadoData(registros) {
     registros.forEach(r => {
         const tr = document.createElement('tr');
         
-        const formatInput = (val, id) => {
+        // 1. Días de la semana desde r.fecha
+        let fechaLimpia = r.fecha || '-';
+        if (r.fecha) {
+            const temp = new Date(r.fecha + 'T00:00:00');
+            if (!isNaN(temp.getTime())) {
+                const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                fechaLimpia = `<strong>${dias[temp.getDay()]}</strong> <span style="color:#777; font-size:0.9em; margin-left: 4px;">${r.fecha.split('-').reverse().join('/')}</span>`;
+            }
+        }
+
+        // 2. Actividad: Evaluar "Sin actividad"
+        const actIngreso = r.hora_ingreso === 0 || r.hora_ingreso === null || r.hora_ingreso === "" ? null : convertirHoraDecimal(r.hora_ingreso);
+        const actSalida = r.hora_salida === 0 || r.hora_salida === null || r.hora_salida === "" ? null : convertirHoraDecimal(r.hora_salida);
+        
+        let actHTML = '';
+        if (!actIngreso && !actSalida) {
+            actHTML = `<td colspan="2" style="padding: 12px; text-align: center; border-bottom: 1px solid #eee; border-right: 1px solid #ddd; background-color: #fff3cd; color: #856404; font-size: 0.85em; font-weight: bold;">⚠️ Sin actividad / Revisar</td>`;
+        } else {
+            actHTML = `
+                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color: #555;">${actIngreso || '-'}</td>
+                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color: #555; border-right: 1px solid #ddd;">${actSalida || '-'}</td>
+            `;
+        }
+
+        // 3. Comparador Dual (Sistema Automático vs Carga del Manager)
+        const formatComparedInput = (autoStr, mgrStr, fieldId) => {
+            const autoVal = Number(autoStr) || 0;
+            const mgrVal = Number(mgrStr) || 0;
+            const diff = autoVal !== mgrVal;
+            
             const disabledAttr = isDisabled ? 'disabled' : '';
-            const bgColor = isDisabled ? '#f9f9f9' : '#fff';
-            return `<input type="number" step="0.5" class="edit-input" data-id="${r.id}" data-field="${id}" value="${val || 0}" ${disabledAttr} style="background-color:${bgColor}; width: 70px; padding: 5px; text-align:right; border: 1px solid #ccc; border-radius:3px;">`;
+            
+            // Resaltes visuales
+            const inBg = isDisabled ? '#f9f9f9' : (diff ? '#fffbf0' : '#fff');
+            const inBorder = diff ? 'border: 1px solid #ff9800;' : 'border: 1px solid #ccc;';
+            const highlightClass = diff && !isDisabled ? 'background-color: #fff9e6;' : ''; 
+            const valColor = diff && !isDisabled ? '#d84315' : '#0056b3';
+
+            return `
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 4px; border-radius: 4px; ${highlightClass}">
+                    <span style="color: #6c757d; font-size: 0.9em; min-width: 25px;" title="Cálculo del Sistema">${autoVal}</span>
+                    <span style="color: #ddd;">|</span>
+                    <input type="number" step="0.5" class="edit-input" data-id="${r.id}" data-field="${fieldId}" value="${mgrVal}" ${disabledAttr} style="background-color:${inBg}; width: 60px; padding: 4px 6px; text-align:right; border-radius:3px; font-weight: bold; color: ${valColor}; ${inBorder} transition: all 0.2s;">
+                </div>
+            `;
         };
+
         const formatText = (val, id) => {
             const disabledAttr = isDisabled ? 'disabled' : '';
             const bgColor = isDisabled ? '#f9f9f9' : '#fff';
             return `<input type="text" class="edit-input" data-id="${r.id}" data-field="${id}" value="${val || ''}" ${disabledAttr} style="background-color:${bgColor}; width: 100%; padding: 5px; border: 1px solid #ccc; border-radius:3px;">`;
         };
 
+        // 4. Lógica "Alertas Leves" cuando todo es 0
+        const sumAuto = Number(r.horas_50_auto || 0) + Number(r.horas_100_auto || 0) + Number(r.horas_feriado_auto || 0);
+        const sumMgr = Number(r.horas_50_manager || 0) + Number(r.horas_100_manager || 0) + Number(r.horas_feriado_manager || 0);
+        
+        if (sumAuto === 0 && sumMgr === 0 && !actIngreso && !actSalida) {
+             tr.style.opacity = '0.5';
+             tr.style.backgroundColor = '#fafafa';
+        }
+
         tr.innerHTML = `
-            <td style="padding: 12px; border-bottom: 1px solid #eee;"><strong>${r.fecha || '-'}</strong></td>
-            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color: #555;">${r.hora_ingreso || 0}</td>
-            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color: #555;">${r.hora_salida || 0}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; border-right: 1px solid #ddd; white-space: nowrap;">${fechaLimpia}</td>
+            ${actHTML}
             <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">
-                ${formatInput(r.horas_50_manager, 'horas_50_manager')}
+                ${formatComparedInput(r.horas_50_auto, r.horas_50_manager, 'horas_50_manager')}
             </td>
             <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">
-                ${formatInput(r.horas_100_manager, 'horas_100_manager')}
+                ${formatComparedInput(r.horas_100_auto, r.horas_100_manager, 'horas_100_manager')}
             </td>
-            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">
-                ${formatInput(r.horas_feriado_manager, 'horas_feriado_manager')}
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee; border-right: 1px solid #ddd;">
+                ${formatComparedInput(r.horas_feriado_auto, r.horas_feriado_manager, 'horas_feriado_manager')}
             </td>
             <td style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">
                 ${formatText(r.comentarios, 'comentarios')}
