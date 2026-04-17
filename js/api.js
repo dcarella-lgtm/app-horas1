@@ -8,6 +8,8 @@ const supabaseKey = "sb_publishable_EzjcSjadXXDzh0SI35zxmA_pbHzaw-T";
 
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+console.log("URL:", supabaseUrl);
+
 // ============================================================
 // INSERTAR REGISTROS
 // ============================================================
