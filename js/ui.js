@@ -84,27 +84,14 @@ export function renderRegistros(registros) {
         if (r.estado === 'aprobado') estadoColor = '#388e3c'; 
         if (r.estado === 'rechazado') estadoColor = '#d32f2f'; 
         if (r.estado === 'revision') estadoColor = '#f57c00'; 
-        
-        // Fecha limpia
-        let fechaLimpia = r.fecha || '-';
-        if (r.fecha) {
-            const temp = new Date(r.fecha + 'T00:00:00');
-            if (!isNaN(temp.getTime())) {
-                const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-                fechaLimpia = `<strong>${dias[temp.getDay()]}</strong> <span style="color:#777; font-size:0.9em; margin-left: 4px;">${r.fecha.split('-').reverse().join('/')}</span>`;
-            }
-        }
-        
-        // Conversión horaria
-        const horasTrab = r.horas_trabajadas === 0 || r.horas_trabajadas === '0' || r.horas_trabajadas === null || r.horas_trabajadas === "" ? '00:00' : convertirHoraDecimal(r.horas_trabajadas);
 
         tr.innerHTML = `
             <td style="padding: 12px; border-bottom: 1px solid #eee;">${r.legajo || '-'}</td>
             <td style="padding: 12px; border-bottom: 1px solid #eee;"><strong>${r.nombre || '-'}</strong></td>
-            <td style="padding: 12px; border-bottom: 1px solid #eee; white-space: nowrap;">${fechaLimpia}</td>
-            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color: #555;">${horasTrab}</td>
-            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color:#0e4eb5; font-weight:bold;">${Number(r.horas_50_manager || 0)}</td>
-            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color:#0e4eb5; font-weight:bold;">${Number(r.horas_100_manager || 0)}</td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee; color: #555;">${r.dias || 0}</td>
+            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color:#0e4eb5; font-weight:bold;">${r.total_50 || 0}</td>
+            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color:#0e4eb5; font-weight:bold;">${r.total_100 || 0}</td>
+            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color:#0e4eb5; font-weight:bold;">${r.total_feriado || 0}</td>
             <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">
                 <span style="background: ${estadoColor}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; text-transform: uppercase;">
                     ${r.estado || 'pendiente'}

@@ -57,6 +57,47 @@ document.addEventListener("DOMContentLoaded", async () => {
     showLoading(false);
     
     let allRecords = []; // Cache local
+
+    function agruparPorEmpleado(registros) {
+        const mapa = {};
+        registros.forEach(r => {
+            if (!mapa[r.legajo]) {
+                mapa[r.legajo] = {
+                    legajo: r.legajo,
+                    nombre: r.nombre,
+                    dias: 0,
+                    total_50: 0,
+                    total_100: 0,
+                    total_feriado: 0,
+                    estados: new Set()
+                };
+            }
+            const emp = mapa[r.legajo];
+            emp.dias++;
+            emp.total_50 += Number(r.horas_50_manager || 0);
+            emp.total_100 += Number(r.horas_100_manager || 0);
+            emp.total_feriado += Number(r.horas_feriado_manager || 0);
+            emp.estados.add(r.estado);
+        });
+
+        // Convertir a array y resolver la prioridad del estado general de ese empleado
+        return Object.values(mapa).map(emp => {
+            let estadoGeneral = 'aprobado'; // Asume aprobado a menos que otra cosa lo derribe
+            if (emp.estados.has('rechazado')) estadoGeneral = 'rechazado';
+            else if (emp.estados.has('revision')) estadoGeneral = 'revision';
+            else if (emp.estados.has('pendiente')) estadoGeneral = 'pendiente';
+            
+            return {
+                legajo: emp.legajo,
+                nombre: emp.nombre,
+                dias: emp.dias,
+                total_50: emp.total_50,
+                total_100: emp.total_100,
+                total_feriado: emp.total_feriado,
+                estado: estadoGeneral
+            };
+        });
+    }
     
     // Listener de filtros
     const filtroEstado = document.getElementById("filter-estado");
@@ -64,10 +105,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         filtroEstado.addEventListener("change", (e) => {
             const val = e.target.value;
             if (!val) {
-                renderRegistros(allRecords);
+                renderRegistros(agruparPorEmpleado(allRecords));
             } else {
                 const filtrados = allRecords.filter(r => r.estado === val);
-                renderRegistros(filtrados);
+                renderRegistros(agruparPorEmpleado(filtrados));
             }
         });
     }
@@ -128,9 +169,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const filtroSelect = document.getElementById("filter-estado");
         const filtroInicial = filtroSelect ? filtroSelect.value : '';
         if (filtroInicial) {
-            renderRegistros(allRecords.filter(r => r.estado === filtroInicial));
+            renderRegistros(agruparPorEmpleado(allRecords.filter(r => r.estado === filtroInicial)));
         } else {
-            renderRegistros(allRecords);
+            renderRegistros(agruparPorEmpleado(allRecords));
         }
       } else {
         showError(false);
