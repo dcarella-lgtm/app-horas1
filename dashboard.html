@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>App Horas Extras - Dashboard</title>
     <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script type="module" src="js/app.js" defer></script>
 </head>
 <body>
@@ -18,7 +22,61 @@
     </header>
     <main>
         <h2>Dashboard Administrativo</h2>
-        <p>Vista general y reportes.</p>
+        <p>Vista general y reportes de la base de datos.</p>
+
+        <div id="dashboard-container" style="margin-top: 2rem;">
+            
+            <!-- Controles Cabecera Dashboard -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+                
+                <!-- Filtros -->
+                <div id="dashboard-filters" style="display: none;">
+                    <label style="margin-right: 10px; font-weight: bold; color: #333;">Filtrar por Estado:</label>
+                    <select id="filter-estado" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;">
+                        <option value="">Todos</option>
+                        <option value="pendiente">Pendientes</option>
+                        <option value="aprobado">Aprobados</option>
+                        <option value="revision">En Revisión</option>
+                        <option value="rechazado">Rechazados</option>
+                    </select>
+                </div>
+
+                <!-- Exportador de Liquidaciones -->
+                <button id="btn-exportar" style="padding: 10px 15px; background: #0056b3; border: none; cursor:pointer; color: white; border-radius:4px; font-weight:bold; display:none;">📊 Exportar Aprobados</button>
+
+            </div>
+            
+            <!-- Estados -->
+            <div id="loading-state" style="display: none; padding: 20px; background: #e0f7fa; color: #006064; border-radius: 4px;">
+                Cargando datos desde Supabase... ⏳
+            </div>
+            
+            <div id="empty-state" style="display: none; padding: 20px; background: #fff3e0; color: #e65100; border-radius: 4px;">
+                No hay registros para mostrar.
+            </div>
+            
+            <div id="error-state" style="display: none; padding: 20px; background: #ffebee; color: #c62828; border-radius: 4px;">
+                Ocurrió un error al cargar los datos. Revisa la consola para más detalles.
+            </div>
+
+            <!-- Tabla de Registros -->
+            <table id="registros-table" style="display: none; width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <thead style="background-color: #f5f5f5;">
+                    <tr>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Legajo</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Nombre</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Fecha</th>
+                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Horas Trab.</th>
+                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Hs 50 Mgr</th>
+                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Hs 100 Mgr</th>
+                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="registros-tbody">
+                    <!-- Registros inyectados por JS -->
+                </tbody>
+            </table>
+        </div>
     </main>
 </body>
 </html>

@@ -183,3 +183,63 @@ export function leerExcelProcesado(file) {
         reader.readAsArrayBuffer(file);
     });
 }
+
+// ============================================================
+// EXPORTADOR A EXCEL (LIQUIDACION)
+// ============================================================
+
+/**
+ * Recibe los registros aprobados de Supabase, los agrupa por legajo
+ * acumulando todas las horas manager numéricamente y genera el archivo XSLX a exportar.
+ * Utiliza la librería SheetJS inyectada en index.html
+ * @param {Array<Object>} registros 
+ */
+export function exportarExcelLiquidacion(registros) {
+    if (!registros || registros.length === 0) return;
+
+    if (typeof window.XLSX === 'undefined') {
+        alert("Error crítico: Librería SheetJS original no se encuentra cargada. Revisa tu CDN.");
+        return;
+    }
+
+    // 1. Agrupar la sumatoria de horas por legajo
+    const agrupados = {};
+    
+    registros.forEach(r => {
+        if (!agrupados[r.legajo]) {
+            agrupados[r.legajo] = {
+                legajo: r.legajo,
+                nombre: r.nombre,
+                total_horas_50: 0,
+                total_horas_100: 0,
+                total_horas_feriado: 0,
+                total_horas_nocturnas: 0,
+                total_noches: 0
+            };
+        }
+
+        // Sumatorias parciales limpiadas iterando todos los registros
+        agrupados[r.legajo].total_horas_50 += Number(r.horas_50_manager) || 0;
+        agrupados[r.legajo].total_horas_100 += Number(r.horas_100_manager) || 0;
+        agrupados[r.legajo].total_horas_feriado += Number(r.horas_feriado_manager) || 0;
+        agrupados[r.legajo].total_horas_nocturnas += Number(r.horas_nocturnas_manager) || 0;
+        agrupados[r.legajo].total_noches += Number(r.noches_manager) || 0;
+    });
+
+    // 2. Extraer a Array base iterativo
+    const datasaet = Object.values(agrupados);
+
+    // 3. Crear Documento usando API pura
+    const ws = window.XLSX.utils.json_to_sheet(datasaet);
+    const wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, ws, "Liquidacion_Cerrada");
+
+    // 4. Formatear Fecha Actual de Tíutlo YYYY-MM
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const outName = `horas_liquidadas_${yyyy}-${mm}.xlsx`;
+
+    // 5. Solicitar Descarga Asincrona local
+    window.XLSX.writeFile(wb, outName);
+}
