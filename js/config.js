@@ -52,7 +52,7 @@ export async function inicializarConfiguracion() {
     }
 }
 
-async function cargarFeriados() {
+export async function cargarFeriados() {
     try {
         const res = await obtenerFeriadosDB();
         if (res.ok && res.data) {
@@ -68,7 +68,7 @@ async function cargarFeriados() {
     }
 }
 
-async function cargarConfigRRHH() {
+export async function cargarConfigRRHH() {
     try {
         const res = await obtenerConfigRRHH();
         if (res.ok && res.data) {
