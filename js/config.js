@@ -97,13 +97,21 @@ export function getConfigRRHH() {
  */
 export function analizarTipoEvento(registro) {
     const aus = String(registro.ausencias || "").toLowerCase();
-    const config = getConfigRRHH();
-    const keywords = (config.palabras_clave_demora || "").split(",").map(k => k.trim().toLowerCase());
-
     if (!aus || aus.trim() === "") return { tipo: 'ok', detalle: '' };
 
+    const config = getConfigRRHH();
+    const keywords = (config.palabras_clave_demora || "").split(",").map(k => k.trim().toLowerCase());
     const esDemora = keywords.some(k => k && aus.includes(k));
     
+    // Si tiene fichada de ingreso, NO es una ausencia independientemente del comentario
+    const tieneActividad = registro.hora_ingreso !== null && registro.hora_ingreso !== 0 && registro.hora_ingreso !== "";
+    
+    if (tieneActividad) {
+        // Podría ser una demora si el comentario coincide con las palabras clave
+        if (esDemora) return { tipo: 'demora', detalle: registro.ausencias };
+        return { tipo: 'ok', detalle: '' };
+    }
+
     if (esDemora) {
         return { tipo: 'demora', detalle: registro.ausencias };
     } else {
