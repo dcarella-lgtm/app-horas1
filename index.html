@@ -30,7 +30,26 @@
         <p>Sistema de gestión de horas extras.</p>
 
         <!-- Input para testear Excel -->
-        <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm" />
+        <div class="upload-container">
+            <label for="fileInput" class="btn-upload">
+                <svg fill="currentColor" width="20" height="20" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg> 
+                Subir archivo de horas
+            </label>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm" class="hidden-input" />
+            <div id="file-name-display" class="file-name-display">Ningún archivo seleccionado</div>
+        </div>
+
+        <script>
+            // Pequeño script solo visual para la carga
+            document.getElementById('fileInput').addEventListener('change', function(e) {
+                const display = document.getElementById('file-name-display');
+                if (e.target.files.length > 0) {
+                    display.innerHTML = `<span style="color:#198754">✅ Archivo cargado: <strong>${e.target.files[0].name}</strong></span>`;
+                } else {
+                    display.innerText = "Ningún archivo seleccionado";
+                }
+            });
+        </script>
     </main>
 </body>
 </html>

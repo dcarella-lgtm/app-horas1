@@ -58,44 +58,45 @@ export function renderRegistros(registros) {
         return;
     }
 
+    // Actualizamos las Cards Superiores si existen
+    const mTotal = document.getElementById('metric-total');
+    if (mTotal) {
+        mTotal.innerText = registros.length;
+        document.getElementById('metric-aprobados').innerText = registros.filter(r => r.estado === 'aprobado').length;
+        document.getElementById('metric-revision').innerText = registros.filter(r => r.estado === 'revision').length;
+        document.getElementById('metric-pendientes').innerText = registros.filter(r => r.estado === 'pendiente').length;
+    }
+
     toggleStates('', 'table');
     tbody.innerHTML = '';
 
     registros.forEach(r => {
         const tr = document.createElement('tr');
         tr.style.cursor = 'pointer';
-        tr.style.transition = 'all 0.2s ease-in-out';
-        tr.title = 'Click para revisar y editar horas de este empleado';
-        tr.onmouseover = () => { 
-            tr.style.backgroundColor = '#e8f4fd'; 
-            tr.style.boxShadow = 'inset 0 0 8px rgba(0, 86, 179, 0.15)'; 
-            tr.style.transform = 'scale(1.002)';
-        };
-        tr.onmouseout = () => { 
-            tr.style.backgroundColor = 'transparent'; 
-            tr.style.boxShadow = 'none'; 
-            tr.style.transform = 'none';
-        };
-        
-        // Redirección con param legajo al hacer clic en fila
         tr.onclick = () => { window.location.href = `empleado.html?legajo=${r.legajo}`; };
         
-        let estadoColor = '#757575'; 
-        if (r.estado === 'aprobado') estadoColor = '#388e3c'; 
-        if (r.estado === 'rechazado') estadoColor = '#d32f2f'; 
-        if (r.estado === 'revision') estadoColor = '#f57c00'; 
+        // Sumar horas extras usando el objeto agrupado de app.js (50 + 100 + feriado)
+        const totalExtras = Number(r.total_50||0) + Number(r.total_100||0) + Number(r.total_feriado||0);
+        
+        // Mapeo del estado a las clases Badge limpias
+        const estadoLimpio = r.estado ? r.estado.toLowerCase() : 'pendiente';
 
         tr.innerHTML = `
-            <td style="padding: 12px; border-bottom: 1px solid #eee;">${r.legajo || '-'}</td>
-            <td style="padding: 12px; border-bottom: 1px solid #eee;"><strong>${r.nombre || '-'}</strong></td>
-            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee; color: #555;">${r.dias || 0}</td>
-            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color:#0e4eb5; font-weight:bold;">${r.total_50 || 0}</td>
-            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color:#0e4eb5; font-weight:bold;">${r.total_100 || 0}</td>
-            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color:#0e4eb5; font-weight:bold;">${r.total_feriado || 0}</td>
-            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">
-                <span style="background: ${estadoColor}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; text-transform: uppercase;">
-                    ${r.estado || 'pendiente'}
-                </span>
+            <td>
+                <div style="font-weight: 700; color: #2b2d42;">${r.nombre || '-'}</div>
+                <div style="font-size: 0.8em; color: #8d99ae; margin-top:2px;">Legajo: ${r.legajo || '-'}</div>
+            </td>
+            <td class="text-center">
+                <span style="font-weight: 600;">${r.dias || 0}</span> d.
+            </td>
+            <td class="text-center" style="font-weight: bold; color: #0056b3;">
+                ${totalExtras > 0 ? (totalExtras + ' hs') : '<span style="color:#adb5bd">-</span>'}
+            </td>
+            <td class="text-center">
+                <span class="badge ${estadoLimpio}">${estadoLimpio}</span>
+            </td>
+            <td class="text-center">
+                <button class="btn-action">Revisar 👉</button>
             </td>
         `;
         tbody.appendChild(tr);

@@ -68,21 +68,39 @@
                 Ocurrió un error al cargar los datos. Revisa la consola para más detalles.
             </div>
 
+            <!-- MÉTRICAS -->
+            <div class="metrics-grid" id="metrics-container" style="display: flex;">
+                <div class="metric-card">
+                    <div class="metric-title">Empleados totales</div>
+                    <div class="metric-value" id="metric-total">0</div>
+                </div>
+                <div class="metric-card success">
+                    <div class="metric-title">Aprobados</div>
+                    <div class="metric-value" id="metric-aprobados">0</div>
+                </div>
+                <div class="metric-card warning" style="border-left-color: #f57c00;">
+                    <div class="metric-title">En Revisión</div>
+                    <div class="metric-value" id="metric-revision">0</div>
+                </div>
+                <div class="metric-card pendiente" style="border-left-color: #6c757d;">
+                    <div class="metric-title">Pendientes</div>
+                    <div class="metric-value" id="metric-pendientes">0</div>
+                </div>
+            </div>
+
             <!-- Tabla de Registros -->
-            <table id="registros-table" style="display: none; width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                <thead style="background-color: #f5f5f5;">
+            <table class="corporate-table" id="registros-table" style="display: none; margin-top: 20px;">
+                <thead>
                     <tr>
-                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Legajo</th>
-                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Nombre</th>
-                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Total Días</th>
-                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Total 50%</th>
-                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Total 100%</th>
-                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Total Feriado</th>
-                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Estado General</th>
+                        <th style="text-align: left;">Empleado</th>
+                        <th class="text-center">Días Rep.</th>
+                        <th class="text-center">Total Extras</th>
+                        <th class="text-center">Estado General</th>
+                        <th class="text-center">Acción</th>
                     </tr>
                 </thead>
                 <tbody id="registros-tbody">
-                    <!-- Registros inyectados por JS -->
+                    <!-- JS Inyectará aquí -->
                 </tbody>
             </table>
         </div>
