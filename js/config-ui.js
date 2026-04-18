@@ -160,12 +160,26 @@ function renderStaticFeriados() {
         item.style.alignItems = "center";
         item.style.fontSize = "0.9em";
 
+        // Usar getDetalleFeriado para saber si está activo (no es nulo)
+        const nombreActual = getDetalleFeriado(fecha);
+        const estaActivo = nombreActual !== null;
+
+        if (!estaActivo) {
+            item.style.opacity = "0.6";
+            item.style.background = "#f8f9fa";
+        }
+
         item.innerHTML = `
             <div>
                 <span style="color:#666; margin-right:8px;">${fecha.split("-").reverse().join("/")}</span>
-                <strong>${nombre}</strong>
+                <strong style="${!estaActivo ? 'text-decoration: line-through;' : ''}">${estaActivo ? nombre : 'Desactivado'}</strong>
             </div>
-            <button class="btn-edit-static" data-fecha="${fecha}" data-nombre="${nombre}" style="background:none; border:none; color:#0081cf; cursor:pointer; font-size:0.85em; font-weight:bold;">Personalizar</button>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-edit-static" data-fecha="${fecha}" data-nombre="${nombre}" style="background:none; border:none; color:#0081cf; cursor:pointer; font-size:0.85em; font-weight:bold; visibility: ${estaActivo ? 'visible' : 'hidden'}">Personalizar</button>
+                <button class="btn-toggle-static" data-fecha="${fecha}" data-nombre="${nombre}" data-activo="${estaActivo}" style="background:none; border:none; color:${estaActivo ? '#dc3545' : '#28a745'}; cursor:pointer; font-size:0.85em; font-weight:bold;">
+                    ${estaActivo ? 'Desactivar' : 'Activar'}
+                </button>
+            </div>
         `;
         container.appendChild(item);
     });
@@ -176,6 +190,32 @@ function renderStaticFeriados() {
             document.getElementById("feriado-nombre").value = btn.dataset.nombre;
             window.scrollTo({ top: 0, behavior: 'smooth' });
             document.getElementById("feriado-nombre").focus();
+        };
+    });
+
+    container.querySelectorAll(".btn-toggle-static").forEach(btn => {
+        btn.onclick = async () => {
+            const fecha = btn.dataset.fecha;
+            const activo = btn.dataset.activo === "true";
+
+            btn.disabled = true;
+            btn.innerText = "⌛";
+
+            if (activo) {
+                // Desactivar: Guardamos marca __LABORABLE__ en DB
+                await agregarFeriadoDB(fecha, "__LABORABLE__");
+            } else {
+                // Reactivar: Si existe en DB como __LABORABLE__, lo borramos
+                const res = await obtenerFeriadosDB();
+                if (res.ok) {
+                    const exacto = res.data.find(f => f.fecha === fecha && f.nombre === "__LABORABLE__");
+                    if (exacto) await eliminarFeriadoDB(exacto.id);
+                }
+            }
+
+            await cargarFeriados(); // Recargar cache interna
+            await refreshFeriadosList(); // Refrescar UI dinámica
+            renderStaticFeriados(); // Refrescar UI estática local
         };
     });
 }
