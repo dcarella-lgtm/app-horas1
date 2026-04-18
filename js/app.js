@@ -4,8 +4,13 @@ import { inicializarConfiguracion } from "./config.js";
 import { showLoading, showError, renderRegistros, renderEmpleadoData, showToast } from "./ui.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await inicializarConfiguracion(); // Sincronizar feriados y config RRHH desde DB
-  console.log("App inicializada");
+  console.log("[App] DOM Cargado. Iniciando configuración...");
+  try {
+    await inicializarConfiguracion(); 
+    console.log("[App] Configuración inicializada con éxito.");
+  } catch (err) {
+    console.error("[App] Fallo crítico al inicializar configuración:", err);
+  }
 
   // ==========================================
   // LÓGICA DE CARGA DE EXCEL (INDEX)

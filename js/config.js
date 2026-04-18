@@ -3,6 +3,8 @@
  * Aquí se definen los feriados y otras variables de negocio.
  */
 
+import { obtenerFeriadosDB, obtenerConfigRRHH } from "./api.js";
+
 // Lista de feriados nacionales Argentina 2026 (Backup estático)
 const FERIADOS_ESTATICOS = {
     "2026-01-01": "Año Nuevo",
@@ -26,56 +28,44 @@ const FERIADOS_ESTATICOS = {
     "2026-09-21": "Día del Trabajador Perfumista"
 };
 
-// Cache para feriados cargados desde la base de datos
+// Cache para configuración
 let FERIADOS_DINAMICOS = {};
-
-/**
- * Carga los feriados desde Supabase y los mezcla con los estáticos.
- */
-import { obtenerFeriadosDB } from "./api.js";
-
-export async function cargarFeriados() {
-    try {
-        const res = await obtenerFeriadosDB();
-        if (res.ok) {
-            const nuevos = {};
-            res.data.forEach(f => {
-                nuevos[f.fecha] = f.nombre;
-            });
-            FERIADOS_DINAMICOS = nuevos;
-            console.log("[Config] Feriados sincronizados desde DB");
-        }
-    } catch (err) {
-        console.warn("[Config] No se pudo sincronizar con DB, usando backup estático.");
-    }
-}
-
-/**
- * Verifica si una fecha es feriado y retorna su nombre.
- * Prioriza los dinámicos (DB) sobre los estáticos.
- */
-export function getDetalleFeriado(fechaStr) {
-    if (!fechaStr) return null;
-    return FERIADOS_DINAMICOS[fechaStr] || FERIADOS_ESTATICOS[fechaStr] || null;
-}
-
-export const FERIADOS = FERIADOS_ESTATICOS;
-
-// Cache para configuración de RRHH
 let CONFIG_RRHH_CACHE = {
     limite_mensual_50: 40,
     limite_mensual_100: 20,
     palabras_clave_demora: "menor jornada,tarde,demora"
 };
 
-import { obtenerFeriadosDB, obtenerConfigRRHH } from "./api.js";
-
 /**
  * Carga TODA la configuración (Feriados y RRHH)
  */
 export async function inicializarConfiguracion() {
-    await cargarFeriados();
-    await cargarConfigRRHH();
+    console.log("[Config] Iniciando carga de configuración...");
+    try {
+        await Promise.allSettled([
+            cargarFeriados(),
+            cargarConfigRRHH()
+        ]);
+        console.log("[Config] Configuración inicializada.");
+    } catch (err) {
+        console.error("[Config] Error crítico en inicialización:", err);
+    }
+}
+
+async function cargarFeriados() {
+    try {
+        const res = await obtenerFeriadosDB();
+        if (res.ok && res.data) {
+            const nuevos = {};
+            res.data.forEach(f => {
+                nuevos[f.fecha] = f.nombre;
+            });
+            FERIADOS_DINAMICOS = nuevos;
+            console.log("[Config] Feriados sincronizados");
+        }
+    } catch (err) {
+        console.warn("[Config] No se pudo cargar feriados de DB.");
+    }
 }
 
 async function cargarConfigRRHH() {
@@ -86,8 +76,16 @@ async function cargarConfigRRHH() {
             console.log("[Config] Configuración RRHH sincronizada");
         }
     } catch (err) {
-        console.warn("[Config] Error al cargar config RRHH, usando valores por defecto.");
+        console.warn("[Config] No se pudo cargar config RRHH.");
     }
+}
+
+/**
+ * Verifica si una fecha es feriado y retorna su nombre.
+ */
+export function getDetalleFeriado(fechaStr) {
+    if (!fechaStr) return null;
+    return FERIADOS_DINAMICOS[fechaStr] || FERIADOS_ESTATICOS[fechaStr] || null;
 }
 
 export function getConfigRRHH() {
@@ -96,17 +94,15 @@ export function getConfigRRHH() {
 
 /**
  * Analiza un registro para determinar si es una ausencia o una demora
- * @returns { tipo: 'ausencia'|'demora'|'ok', detalle: string }
  */
 export function analizarTipoEvento(registro) {
     const aus = String(registro.ausencias || "").toLowerCase();
     const config = getConfigRRHH();
-    const keywords = config.palabras_clave_demora.split(",").map(k => k.trim().toLowerCase());
+    const keywords = (config.palabras_clave_demora || "").split(",").map(k => k.trim().toLowerCase());
 
-    if (aus === "") return { tipo: 'ok', detalle: '' };
+    if (!aus || aus.trim() === "") return { tipo: 'ok', detalle: '' };
 
-    // Si tiene texto, verificar si es una demora por palabras clave
-    const esDemora = keywords.some(k => aus.includes(k));
+    const esDemora = keywords.some(k => k && aus.includes(k));
     
     if (esDemora) {
         return { tipo: 'demora', detalle: registro.ausencias };
@@ -114,3 +110,5 @@ export function analizarTipoEvento(registro) {
         return { tipo: 'ausencia', detalle: registro.ausencias };
     }
 }
+
+export const FERIADOS = FERIADOS_ESTATICOS;
