@@ -85,7 +85,18 @@ export async function cargarConfigRRHH() {
  */
 export function getDetalleFeriado(fechaStr) {
     if (!fechaStr) return null;
-    return FERIADOS_DINAMICOS[fechaStr] || FERIADOS_ESTATICOS[fechaStr] || null;
+    
+    // Prioridad 1: Base de datos (Dinamicos)
+    const dinamico = FERIADOS_DINAMICOS[fechaStr];
+    
+    // Si en la DB está marcado como __LABORABLE__, significa que se desactivó el feriado nacional
+    if (dinamico === "__LABORABLE__") return null;
+    
+    // Si tiene un nombre real en la DB, aplicar ese
+    if (dinamico) return dinamico;
+
+    // Prioridad 2: Backup estático
+    return FERIADOS_ESTATICOS[fechaStr] || null;
 }
 
 export function getConfigRRHH() {
