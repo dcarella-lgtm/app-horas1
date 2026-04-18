@@ -1,8 +1,10 @@
 import { leerExcelProcesado, exportarExcelLiquidacion } from "./excel.js";
 import { upsertRegistros, obtenerRegistros } from "./api.js";
+import { cargarFeriados } from "./config.js";
 import { showLoading, showError, renderRegistros, renderEmpleadoData, showToast } from "./ui.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
+  await cargarFeriados(); // Sincronizar feriados desde DB
   console.log("App inicializada");
 
   // ==========================================

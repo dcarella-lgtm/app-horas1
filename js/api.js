@@ -170,3 +170,61 @@ export async function obtenerRegistros(filtros = {}) {
         return { ok: false, data: [], error: err.message };
     }
 }
+
+// ============================================================
+// GESTIÓN DE FERIADOS
+// ============================================================
+
+/**
+ * Obtiene la lista de feriados personalizados desde Supabase.
+ */
+export async function obtenerFeriadosDB() {
+    try {
+        const { data, error } = await supabase
+            .from("feriados")
+            .select("*")
+            .order("fecha", { ascending: true });
+
+        if (error) throw error;
+        return { ok: true, data };
+    } catch (err) {
+        console.error("[API] Error al obtener feriados:", err.message);
+        return { ok: false, data: [], error: err.message };
+    }
+}
+
+/**
+ * Agrega un nuevo feriado a la base de datos.
+ */
+export async function agregarFeriadoDB(fecha, nombre) {
+    try {
+        const { data, error } = await supabase
+            .from("feriados")
+            .insert([{ fecha, nombre }])
+            .select();
+
+        if (error) throw error;
+        return { ok: true, data: data[0] };
+    } catch (err) {
+        console.error("[API] Error al agregar feriado:", err.message);
+        return { ok: false, error: err.message };
+    }
+}
+
+/**
+ * Elimina un feriado por su ID.
+ */
+export async function eliminarFeriadoDB(id) {
+    try {
+        const { error } = await supabase
+            .from("feriados")
+            .delete()
+            .eq("id", id);
+
+        if (error) throw error;
+        return { ok: true };
+    } catch (err) {
+        console.error("[API] Error al eliminar feriado:", err.message);
+        return { ok: false, error: err.message };
+    }
+}
