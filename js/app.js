@@ -1,40 +1,42 @@
 import { leerExcelProcesado, exportarExcelLiquidacion } from "./excel.js";
-import { upsertRegistros, obtenerRegistros } from "./api.js";
+import { obtenerRegistros, upsertRegistros, obtenerUltimaFechaCarga } from "./api.js";
 import { inicializarConfiguracion } from "./config.js";
 import { showLoading, showError, renderRegistros, renderEmpleadoData, showToast } from "./ui.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("[App] DOM Cargado. Iniciando configuración...");
+  
+  // 0. Marcar link activo en nav
+  const currentPath = window.location.pathname;
+  document.querySelectorAll('nav a').forEach(a => {
+      const href = a.getAttribute('href');
+      if (currentPath.endsWith(href) || (currentPath.endsWith('/') && href === 'index.html')) {
+          a.classList.add('active');
+      }
+  });
+
   try {
     await inicializarConfiguracion(); 
+    initHeaderInfo(); // Cargar info de última actualización
     console.log("[App] Configuración inicializada con éxito.");
   } catch (err) {
     console.error("[App] Fallo crítico al inicializar configuración:", err);
   }
 
   // ==========================================
-  // LÓGICA DE CARGA DE EXCEL (INDEX)
+  // LÓGICA DE CARGA DE EXCEL (HEADER)
   // ==========================================
-  const fileInput = document.getElementById("fileInput");
+  const headerFileInput = document.getElementById("headerFileInput");
 
-  if (fileInput) {
-    fileInput.addEventListener("change", async (e) => {
+  if (headerFileInput) {
+    headerFileInput.addEventListener("change", async (e) => {
       try {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Validar extensión del archivo
-        const ext = file.name.split('.').pop().toLowerCase();
-        if (!['xlsx', 'xls', 'xlsm'].includes(ext)) {
-            showToast("Archivo inválido. Solo se aceptan .xlsx, .xls o .xlsm", "error");
-            fileInput.value = "";
-            return;
-        }
-
         showToast("Procesando archivo Excel... ⏳", "info");
 
         const data = await leerExcelProcesado(file);
-
         if (!data || data.length === 0) {
           showToast("El Excel parece estar vacío o sin números de legajo.", "warning");
           return;
@@ -42,21 +44,42 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const resultado = await upsertRegistros(data);
         if (resultado.ok) {
-          showToast(`¡Excel guardado en Supabase! (${resultado.procesados || data.length} registros)`, "success");
+          showToast(`¡Excel guardado! (${resultado.procesados} registros)`, "success");
+          initHeaderInfo(); // Actualizar fecha en el header
+          
+          // Si estamos en dashboard (index.html), recargar para ver cambios
+          if (document.getElementById("dashboard-container")) {
+              setTimeout(() => window.location.reload(), 1500);
+          }
         } else {
           showToast("Error guardando datos: " + resultado.error, "error");
         }
       } catch (error) {
-        console.error("🔥 Error general:", error);
-        showToast("Error procesando Excel: " + error.message, "error");
+          showToast("Error procesando Excel: " + error.message, "error");
       }
-      // Resetear input para permitir subir el mismo file de nuevo si se quiere
-      fileInput.value = "";
+      headerFileInput.value = "";
     });
   }
 
+  async function initHeaderInfo() {
+      const display = document.getElementById('last-update-date');
+      if (!display) return;
+
+      const res = await obtenerUltimaFechaCarga();
+      if (res.ok && res.fecha) {
+          const date = new Date(res.fecha);
+          const formatted = date.toLocaleString('es-AR', {
+              day: '2-digit', month: '2-digit', year: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+          });
+          display.innerText = formatted;
+      } else {
+          display.innerText = "Sin datos";
+      }
+  }
+
   // ==========================================
-  // LÓGICA DEL DASHBOARD (DASHBOARD.HTML)
+  // LÓGICA DEL DASHBOARD (INDEX.HTML)
   // ==========================================
   const dashboardContainer = document.getElementById("dashboard-container");
 
@@ -87,9 +110,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             emp.estados.add(r.estado);
         });
 
-        // Convertir a array y resolver la prioridad del estado general de ese empleado
         return Object.values(mapa).map(emp => {
-            let estadoGeneral = 'aprobado'; // Asume aprobado a menos que otra cosa lo derribe
+            let estadoGeneral = 'aprobado';
             if (emp.estados.has('rechazado')) estadoGeneral = 'rechazado';
             else if (emp.estados.has('revision')) estadoGeneral = 'revision';
             else if (emp.estados.has('pendiente')) estadoGeneral = 'pendiente';
@@ -106,7 +128,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
     
-    // Listener de filtros
     const filtroEstado = document.getElementById("filter-estado");
     if (filtroEstado) {
         filtroEstado.addEventListener("change", (e) => {
@@ -194,15 +215,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const empleadoContainer = document.getElementById("empleado-container");
 
   if (empleadoContainer) {
-      // 1. Obtener legajo desde la URL (?legajo=)
       const urlParams = new URLSearchParams(window.location.search);
       const legajoParam = urlParams.get('legajo');
 
       if (!legajoParam) {
-          document.getElementById('emp-empty-state').style.display = 'block';
-          document.getElementById('emp-empty-state').innerText = "Falta el legajo. Redirigiendo al Dashboard...";
-          showToast("Selecciona un empleado desde la tabla del Dashboard.", "warning");
-          setTimeout(() => { window.location.href = 'dashboard.html'; }, 2000);
+          showToast("Selecciona un empleado desde el Dashboard.", "warning");
+          setTimeout(() => { window.location.href = 'index.html'; }, 1000);
           return;
       }
 
@@ -214,32 +232,27 @@ document.addEventListener("DOMContentLoaded", async () => {
               renderEmpleadoData(response.data);
           } else {
               document.getElementById('emp-empty-state').style.display = 'block';
-              document.getElementById('emp-empty-state').innerText = "El empleado no cuenta con registros cargados.";
               document.getElementById('emp-loading-state').style.display = 'none';
           }
       } catch (err) {
           showError(true);
       }
 
-      // 2. Hook de acción interactiva: Guardar Cambios
       const btnGuardar = document.getElementById('btn-guardar-empleado');
       if (btnGuardar) {
           btnGuardar.addEventListener('click', async () => {
              btnGuardar.innerText = "Guardando... ⏳";
              btnGuardar.disabled = true;
 
-             // Estructuras en DB
              const originalRecords = window.__currentEmpleadoRecords || [];
              const inputs = document.querySelectorAll('.edit-input');
              let recordUpdatesMap = {};
              
-             // Indexar los values scrapeados agrupados por el ID único del record UUID
              inputs.forEach(input => {
                  const id = input.getAttribute('data-id');
                  const field = input.getAttribute('data-field');
                  let value = input.value;
                  
-                 // Castear fields numéricos
                  if (field.includes('horas_')) {
                      value = Number(value);
                      if (isNaN(value)) value = 0;
@@ -249,7 +262,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                  recordUpdatesMap[id][field] = value;
              });
 
-             // Merge data modificada con data dura (fechas, legajo base, insert timestamps)
              const recordsToUpdate = originalRecords.map(orig => {
                  const updatesForThisId = recordUpdatesMap[orig.id] || {};
                  return { ...orig, ...updatesForThisId };
@@ -260,9 +272,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (response.ok) {
                     showToast("¡Cambios guardados con éxito!", "success");
                     btnGuardar.innerText = "Guardado ✅";
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
+                    setTimeout(() => window.location.reload(), 1000);
                 } else {
                     showToast("Error al guardar: " + response.error, "error");
                     btnGuardar.innerText = "Reintentar";
@@ -276,15 +286,14 @@ document.addEventListener("DOMContentLoaded", async () => {
           });
       }
 
-      // 3. Hook de acción interactiva: Aprobar Empleado
       const btnAprobar = document.getElementById('btn-aprobar-empleado');
       if (btnAprobar) {
           btnAprobar.addEventListener('click', async () => {
               if (btnAprobar.disabled) return;
 
-              let confirmText = "¿Aprobar todas las horas cargadas de este empleado? No podrá editarlas luego.";
+              let confirmText = "¿Aprobar todas las horas cargadas de este empleado?";
               if (btnAprobar.dataset.warnings === 'true') {
-                  confirmText = "⚠️ ATENCIÓN: Al menos un día tiene advertencias sin resolver.\n\n¿Deseas APROBAR el reporte de todas formas?";
+                  confirmText = "⚠️ ATENCIÓN: Al menos un día tiene advertencias.\n\n¿Deseas APROBAR de todas formas?";
               }
 
               const confirmacion = confirm(confirmText);
@@ -294,15 +303,12 @@ document.addEventListener("DOMContentLoaded", async () => {
               btnAprobar.disabled = true;
 
               const originalRecords = window.__currentEmpleadoRecords || [];
-              const recordsToUpdate = originalRecords.map(r => ({
-                  ...r,
-                  estado: 'aprobado'
-              }));
+              const recordsToUpdate = originalRecords.map(r => ({ ...r, estado: 'aprobado' }));
 
               try {
                   const response = await upsertRegistros(recordsToUpdate);
                   if (response.ok) {
-                      showToast("¡Horas aprobadas exitosamente!", "success");
+                      showToast("¡Horas aprobadas!", "success");
                       setTimeout(() => window.location.reload(), 1000);
                   } else {
                       showToast("Error al intentar aprobar: " + response.error, "error");

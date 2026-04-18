@@ -269,3 +269,23 @@ export async function guardarConfigRRHH(config) {
         return { ok: false, error: err.message };
     }
 }
+/**
+ * Obtiene la fecha del registro más reciente para mostrar "Última actualización".
+ * @returns {Object} { ok: boolean, fecha: string|null }
+ */
+export async function obtenerUltimaFechaCarga() {
+    try {
+        const { data, error } = await supabase
+            .from("registros_diarios")
+            .select("created_at")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return { ok: true, fecha: data ? data.created_at : null };
+    } catch (err) {
+        console.error("[API] Error al obtener última fecha:", err.message);
+        return { ok: false, fecha: null };
+    }
+}
