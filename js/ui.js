@@ -1,4 +1,5 @@
 // Módulo para manipulación del DOM y eventos de la interfaz
+import { getDetalleFeriado } from "./config.js";
 
 // Función unificada para ocultar todo y mostrar el estado deseado
 function toggleStates(prefix, state) {
@@ -187,6 +188,10 @@ export function renderEmpleadoData(registros) {
             }
         }
 
+        // CONTROL DE FERIADOS
+        const nombreFeriado = getDetalleFeriado(r.fecha);
+        const isFeriado = nombreFeriado !== null;
+
         const actIngreso = r.hora_ingreso === 0 || r.hora_ingreso === null || r.hora_ingreso === "" ? null : convertirHoraDecimal(r.hora_ingreso);
         const actSalida = r.hora_salida === 0 || r.hora_salida === null || r.hora_salida === "" ? null : convertirHoraDecimal(r.hora_salida);
         
@@ -283,8 +288,20 @@ export function renderEmpleadoData(registros) {
             msgFilas = '<div style="color: #388e3c; font-size: 0.8em; margin-top: 6px;">✔ Correcto</div>';
         }
 
+        // Lógica de Alerta de Feriado (si no fue cargado en la columna correspondiente)
+        if (isFeriado && Number(r.horas_feriado_manager || 0) === 0 && !isNoActivity) {
+            tr.style.backgroundColor = '#fff3e0'; // Naranja muy claro para feriado pendiente
+            msgFilas = `<div style="color: #e65100; font-size: 0.8em; margin-top: 6px;"><strong>⚠ Es FERIADO (${nombreFeriado}) → Revisar recargo</strong></div>`;
+        } else if (isFeriado) {
+            tr.style.backgroundColor = '#f3e5f5'; // Violeta muy claro para feriado OK
+        }
+
+        const iconFeriado = isFeriado ? `<span title="Feriado: ${nombreFeriado}" style="cursor:help; margin-left:5px;">🎉</span>` : '';
+
         tr.innerHTML = `
-            <td style="padding: 12px; border-bottom: 1px solid #eee; border-right: 1px solid #ddd; white-space: nowrap;">${fechaLimpia}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; border-right: 1px solid #ddd; white-space: nowrap;" title="${nombreFeriado || ''}">
+                ${fechaLimpia} ${iconFeriado}
+            </td>
             ${actHTML}
             <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">
                 ${formatComparedInput(r.horas_50_auto, r.horas_50_manager, 'horas_50_manager')}
