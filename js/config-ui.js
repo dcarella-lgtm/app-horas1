@@ -80,4 +80,44 @@ async function refreshFeriadosList() {
     } else {
         noMsg.style.display = "block";
     }
+
+    // --- CARGAR CONFIG RRHH ---
+    await loadRRHHConfigUI();
+}
+
+async function loadRRHHConfigUI() {
+    const { getConfigRRHH } = await import("./config.js");
+    const { guardarConfigRRHH } = await import("./api.js");
+    
+    const config = getConfigRRHH();
+    document.getElementById("limit-50").value = config.limite_mensual_50;
+    document.getElementById("limit-100").value = config.limite_mensual_100;
+    document.getElementById("keywords-demora").value = config.palabras_clave_demora;
+
+    const formRRHH = document.getElementById("form-config-rrhh");
+    formRRHH.onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById("btn-save-rrhh");
+        btn.disabled = true;
+        btn.innerText = "Guardando...";
+
+        const newConfig = {
+            id: config.id || undefined, // Upsert necesita el ID si existe
+            limite_mensual_50: parseInt(document.getElementById("limit-50").value),
+            limite_mensual_100: parseInt(document.getElementById("limit-100").value),
+            palabras_clave_demora: document.getElementById("keywords-demora").value,
+            updated_at: new Date().toISOString()
+        };
+
+        const res = await guardarConfigRRHH(newConfig);
+        if (res.ok) {
+            alert("Configuración de RRHH guardada con éxito.");
+            const { inicializarConfiguracion } = await import("./config.js");
+            await inicializarConfiguracion(); // Recargar cache
+        } else {
+            alert("Error al guardar: " + res.error);
+        }
+        btn.disabled = false;
+        btn.innerText = "Guardar Configuración RRHH";
+    };
 }

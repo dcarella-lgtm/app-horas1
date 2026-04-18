@@ -60,3 +60,57 @@ export function getDetalleFeriado(fechaStr) {
 }
 
 export const FERIADOS = FERIADOS_ESTATICOS;
+
+// Cache para configuración de RRHH
+let CONFIG_RRHH_CACHE = {
+    limite_mensual_50: 40,
+    limite_mensual_100: 20,
+    palabras_clave_demora: "menor jornada,tarde,demora"
+};
+
+import { obtenerFeriadosDB, obtenerConfigRRHH } from "./api.js";
+
+/**
+ * Carga TODA la configuración (Feriados y RRHH)
+ */
+export async function inicializarConfiguracion() {
+    await cargarFeriados();
+    await cargarConfigRRHH();
+}
+
+async function cargarConfigRRHH() {
+    try {
+        const res = await obtenerConfigRRHH();
+        if (res.ok && res.data) {
+            CONFIG_RRHH_CACHE = res.data;
+            console.log("[Config] Configuración RRHH sincronizada");
+        }
+    } catch (err) {
+        console.warn("[Config] Error al cargar config RRHH, usando valores por defecto.");
+    }
+}
+
+export function getConfigRRHH() {
+    return CONFIG_RRHH_CACHE;
+}
+
+/**
+ * Analiza un registro para determinar si es una ausencia o una demora
+ * @returns { tipo: 'ausencia'|'demora'|'ok', detalle: string }
+ */
+export function analizarTipoEvento(registro) {
+    const aus = String(registro.ausencias || "").toLowerCase();
+    const config = getConfigRRHH();
+    const keywords = config.palabras_clave_demora.split(",").map(k => k.trim().toLowerCase());
+
+    if (aus === "") return { tipo: 'ok', detalle: '' };
+
+    // Si tiene texto, verificar si es una demora por palabras clave
+    const esDemora = keywords.some(k => aus.includes(k));
+    
+    if (esDemora) {
+        return { tipo: 'demora', detalle: registro.ausencias };
+    } else {
+        return { tipo: 'ausencia', detalle: registro.ausencias };
+    }
+}

@@ -18,6 +18,7 @@
             <a href="index.html">Inicio</a>
             <a href="dashboard.html">Dashboard</a>
             <a href="empleado.html">Empleado</a>
+            <a href="estadisticas.html">Estadísticas</a>
             <a href="configuracion.html" class="active">Configuración</a>
         </nav>
     </header>
@@ -62,6 +63,33 @@
         <section class="config-section" style="margin-top: 3rem; opacity: 0.7;">
             <h3 style="font-size: 1.1em; color: #555;">ℹ Feriados Nacionales 2026 (Pre-cargados)</h3>
             <p style="font-size: 0.85em; color: #777;">Estos feriados están definidos en el sistema y se usan como backup si no hay una base de datos conectada.</p>
+        </section>
+
+        <hr style="margin: 40px 0; border: 0; border-top: 1px solid #ddd;">
+
+        <!-- Configuración de RRHH -->
+        <section class="config-section" style="background: #fdfdfd; padding: 25px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 50px;">
+            <h3 style="color: #004085;">⚙️ Límites de RRHH y Horarios</h3>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 20px;">Indica los límites máximos permitidos por período y las palabras clave para detectar llegadas tarde.</p>
+            
+            <form id="form-config-rrhh" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div>
+                    <label style="display: block; font-size: 0.85em; margin-bottom: 5px; color: #555;">Límite Mensual 50% (hs)</label>
+                    <input type="number" id="limit-50" value="40" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85em; margin-bottom: 5px; color: #555;">Límite Mensual 100% (hs)</label>
+                    <input type="number" id="limit-100" value="20" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="display: block; font-size: 0.85em; margin-bottom: 5px; color: #555;">Palabras clave para Demoras (separadas por coma)</label>
+                    <input type="text" id="keywords-demora" value="menor jornada, tarde, demora" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <small style="color: #888;">El sistema buscará estas palabras en la columna de RRHH/Ausencias.</small>
+                </div>
+                <div style="grid-column: span 2; text-align: right;">
+                    <button type="submit" id="btn-save-rrhh" style="padding: 10px 25px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Guardar Configuración RRHH</button>
+                </div>
+            </form>
         </section>
     </main>
 </body>

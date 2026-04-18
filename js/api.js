@@ -228,3 +228,44 @@ export async function eliminarFeriadoDB(id) {
         return { ok: false, error: err.message };
     }
 }
+
+// ============================================================
+// CONFIGURACIÓN RRHH (Límites y Horarios)
+// ============================================================
+
+/**
+ * Obtiene la configuración de límites y horarios de RRHH.
+ */
+export async function obtenerConfigRRHH() {
+    try {
+        const { data, error } = await supabase
+            .from("config_rrhh")
+            .select("*")
+            .limit(1)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error; // Ignorar si no hay filas
+        return { ok: true, data: data || null };
+    } catch (err) {
+        console.error("[API] Error al obtener config RRHH:", err.message);
+        return { ok: false, data: null, error: err.message };
+    }
+}
+
+/**
+ * Guarda o actualiza la configuración de RRHH.
+ */
+export async function guardarConfigRRHH(config) {
+    try {
+        const { data, error } = await supabase
+            .from("config_rrhh")
+            .upsert([config])
+            .select();
+
+        if (error) throw error;
+        return { ok: true, data: data[0] };
+    } catch (err) {
+        console.error("[API] Error al guardar config RRHH:", err.message);
+        return { ok: false, error: err.message };
+    }
+}
