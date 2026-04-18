@@ -55,6 +55,37 @@ function formatExcelDate(d) {
 }
 
 /**
+ * Normaliza un valor de tiempo a fracción de día (0-1).
+ * Soporta: 
+ * - Strings "HH:mm"
+ * - Fracciones de Excel (< 1)
+ * - Horas decimales (> 1, ej: 8.5)
+ */
+function normalizeTime(val) {
+    if (val === null || val === undefined || String(val).trim() === "") return null;
+
+    // Si es un string "HH:mm" o "HH:mm:ss"
+    if (typeof val === 'string' && val.includes(':')) {
+        const parts = val.split(':');
+        const h = parseInt(parts[0], 10) || 0;
+        const m = parseInt(parts[1], 10) || 0;
+        const s = parseInt(parts[2], 10) || 0;
+        return (h * 3600 + m * 60 + s) / 86400;
+    }
+
+    let num = Number(String(val).replace(',', '.'));
+    if (isNaN(num)) return null;
+
+    // Si es mayor a 1, asumimos que son horas decimales (8.5 hs)
+    if (num > 1) {
+        return num / 24;
+    }
+
+    // De lo contrario es una fracción de Excel estándar (0.333...)
+    return num;
+}
+
+/**
  * Lee y procesa el archivo Excel especificado.
  * Retorna una promesa con el JSON mapeado y limpiado.
  * @param {File} file Archivo Excel subido por el usuario
@@ -142,6 +173,9 @@ export function leerExcelProcesado(file) {
                         else if (type === 'date') {
                             return formatExcelDate(result);
                         } 
+                        else if (type === 'time') {
+                            return normalizeTime(result);
+                        }
                         else { // type === 'string'
                             if (result === null || result === undefined) return "";
                             return String(result).trim();
@@ -153,8 +187,8 @@ export function leerExcelProcesado(file) {
                         legajo: getVal(fieldPatterns.legajo, 'string'),
                         nombre: getVal(fieldPatterns.nombre, 'string'),
                         fecha: getVal(fieldPatterns.fecha, 'date'),
-                        hora_ingreso: getVal(fieldPatterns.hora_ingreso, 'number'),
-                        hora_salida: getVal(fieldPatterns.hora_salida, 'number'),
+                        hora_ingreso: getVal(fieldPatterns.hora_ingreso, 'time'),
+                        hora_salida: getVal(fieldPatterns.hora_salida, 'time'),
                         horas_trabajadas: getVal(fieldPatterns.horas_trabajadas, 'number'),
                         
                         horas_50_manager: getVal(fieldPatterns.horas_50_manager, 'number'),

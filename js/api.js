@@ -140,7 +140,7 @@ export async function obtenerRegistros(filtros = {}) {
         let query = supabase
             .from("registros_diarios")
             .select("*")
-            .order("fecha", { ascending: false });
+            .order("fecha", { ascending: true });
 
         if (filtros.legajo) {
             query = query.eq("legajo", filtros.legajo);

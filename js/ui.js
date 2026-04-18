@@ -26,9 +26,16 @@ function toggleStates(prefix, state) {
 
 // Convertidor de decimal de Excel (0-1) a formato HH:mm (solo propósitos visuales)
 export function convertirHoraDecimal(valor) {
-    if (valor === null || valor === undefined || valor === "") return "-";
-    const num = Number(valor);
-    if (isNaN(num)) return valor; // Si por algún motivo ya viene como texto "12:00", lo deja intacto
+    if (valor === null || valor === undefined || valor === "" || valor === 0) return "-";
+    
+    let num = Number(valor);
+    if (isNaN(num)) return valor; 
+
+    // Si el número es mayor a 1, asumimos que se guardó como horas decimales (ej 8.5)
+    // Lo normalizamos a fracción Excel (0-1) para el cálculo visual
+    if (num > 1) {
+        num = num / 24;
+    }
 
     // Excel guarda horas como fracción de un día (0 a 1)
     const hoursFloat = num * 24;
