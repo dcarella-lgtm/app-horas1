@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function init() {
+    renderStaticFeriados();
     await refreshFeriadosList();
 
     const form = document.getElementById("form-feriado");
@@ -120,4 +121,42 @@ async function loadRRHHConfigUI() {
         btn.disabled = false;
         btn.innerText = "Guardar Configuración RRHH";
     };
+}
+
+async function renderStaticFeriados() {
+    const { FERIADOS } = await import("./config.js");
+    const container = document.getElementById("static-feriados-list");
+    if (!container) return;
+
+    container.innerHTML = "";
+    Object.entries(FERIADOS).sort().forEach(([fecha, nombre]) => {
+        const item = document.createElement("div");
+        item.style.background = "#fff";
+        item.style.padding = "10px 15px";
+        item.style.borderRadius = "6px";
+        item.style.border = "1px solid #eee";
+        item.style.display = "flex";
+        item.style.justifyContent = "space-between";
+        item.style.alignItems = "center";
+        item.style.fontSize = "0.9em";
+
+        item.innerHTML = `
+            <div>
+                <span style="color:#666; margin-right:8px;">${fecha.split("-").reverse().join("/")}</span>
+                <strong>${nombre}</strong>
+            </div>
+            <button class="btn-edit-static" data-fecha="${fecha}" data-nombre="${nombre}" style="background:none; border:none; color:#0081cf; cursor:pointer; font-size:0.85em; font-weight:bold;">Personalizar</button>
+        `;
+        container.appendChild(item);
+    });
+
+    // Eventos para personalizar
+    container.querySelectorAll(".btn-edit-static").forEach(btn => {
+        btn.onclick = () => {
+            document.getElementById("feriado-fecha").value = btn.dataset.fecha;
+            document.getElementById("feriado-nombre").value = btn.dataset.nombre;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById("feriado-nombre").focus();
+        };
+    });
 }
