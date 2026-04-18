@@ -1,5 +1,5 @@
 import { obtenerFeriadosDB, agregarFeriadoDB, eliminarFeriadoDB, obtenerConfigRRHH, guardarConfigRRHH } from "./api.js";
-import { FERIADOS, cargarFeriados, getConfigRRHH, inicializarConfiguracion } from "./config.js";
+import { FERIADOS, cargarFeriados, getConfigRRHH, inicializarConfiguracion, getDetalleFeriado } from "./config.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     console.log("[Config-UI] DOM cargado, inicializando...");
