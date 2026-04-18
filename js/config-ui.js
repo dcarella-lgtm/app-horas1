@@ -1,14 +1,25 @@
-import { obtenerFeriadosDB, agregarFeriadoDB, eliminarFeriadoDB } from "./api.js";
-import { cargarFeriados } from "./config.js";
+import { obtenerFeriadosDB, agregarFeriadoDB, eliminarFeriadoDB, obtenerConfigRRHH, guardarConfigRRHH } from "./api.js";
+import { FERIADOS, cargarFeriados, getConfigRRHH, inicializarConfiguracion } from "./config.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+    console.log("[Config-UI] DOM cargado, inicializando...");
     init();
 });
 
 async function init() {
-    renderStaticFeriados();
-    await refreshFeriadosList();
+    try {
+        // 1. Mostrar feriados estáticos de inmediato
+        renderStaticFeriados();
 
+        // 2. Cargar datos dinámicos
+        await refreshFeriadosList();
+        
+        console.log("[Config-UI] Inicialización completada.");
+    } catch (err) {
+        console.error("[Config-UI] Error en init:", err);
+    }
+
+    // Evento para agregar feriado
     const form = document.getElementById("form-feriado");
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -42,16 +53,19 @@ async function refreshFeriadosList() {
     const noMsg = document.getElementById("no-feriados-msg");
     const tbody = document.getElementById("feriados-tbody");
 
-    loading.style.display = "block";
-    table.style.display = "none";
-    noMsg.style.display = "none";
-    tbody.innerHTML = "";
+    if (loading) loading.style.display = "block";
+    if (table) table.style.display = "none";
+    if (noMsg) noMsg.style.display = "none";
+    if (tbody) tbody.innerHTML = "";
 
+    console.log("[Config-UI] Obteniendo feriados de la DB...");
     const res = await obtenerFeriadosDB();
-    loading.style.display = "none";
+    
+    if (loading) loading.style.display = "none";
 
-    if (res.ok && res.data.length > 0) {
-        table.style.display = "table";
+    if (res.ok && res.data && res.data.length > 0) {
+        console.log(`[Config-UI] ${res.data.length} feriados obtenidos de la DB.`);
+        if (table) table.style.display = "table";
         res.data.forEach(f => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
@@ -64,7 +78,6 @@ async function refreshFeriadosList() {
             tbody.appendChild(tr);
         });
 
-        // Eventos delegados para borrar
         tbody.querySelectorAll(".btn-delete").forEach(btn => {
             btn.addEventListener("click", async () => {
                 if (confirm("¿Estás seguro de eliminar este feriado?")) {
@@ -77,9 +90,9 @@ async function refreshFeriadosList() {
                 }
             });
         });
-
     } else {
-        noMsg.style.display = "block";
+        console.log("[Config-UI] No hay feriados en la DB.");
+        if (noMsg) noMsg.style.display = "block";
     }
 
     // --- CARGAR CONFIG RRHH ---
@@ -87,15 +100,23 @@ async function refreshFeriadosList() {
 }
 
 async function loadRRHHConfigUI() {
-    const { getConfigRRHH } = await import("./config.js");
-    const { guardarConfigRRHH } = await import("./api.js");
+    // Sincronizar configuración actual antes de mostrar
+    await inicializarConfiguracion();
     
     const config = getConfigRRHH();
-    document.getElementById("limit-50").value = config.limite_mensual_50;
-    document.getElementById("limit-100").value = config.limite_mensual_100;
-    document.getElementById("keywords-demora").value = config.palabras_clave_demora;
+    console.log("[Config-UI] Cargando configuración RRHH en formulario:", config);
+    
+    const input50 = document.getElementById("limit-50");
+    const input100 = document.getElementById("limit-100");
+    const inputKeywords = document.getElementById("keywords-demora");
+
+    if (input50) input50.value = config.limite_mensual_50 || 40;
+    if (input100) input100.value = config.limite_mensual_100 || 20;
+    if (inputKeywords) inputKeywords.value = config.palabras_clave_demora || "";
 
     const formRRHH = document.getElementById("form-config-rrhh");
+    if (!formRRHH) return;
+
     formRRHH.onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById("btn-save-rrhh");
@@ -103,18 +124,17 @@ async function loadRRHHConfigUI() {
         btn.innerText = "Guardando...";
 
         const newConfig = {
-            id: config.id || undefined, // Upsert necesita el ID si existe
-            limite_mensual_50: parseInt(document.getElementById("limit-50").value),
-            limite_mensual_100: parseInt(document.getElementById("limit-100").value),
-            palabras_clave_demora: document.getElementById("keywords-demora").value,
+            id: config.id || undefined,
+            limite_mensual_50: parseInt(input50.value),
+            limite_mensual_100: parseInt(input100.value),
+            palabras_clave_demora: inputKeywords.value,
             updated_at: new Date().toISOString()
         };
 
         const res = await guardarConfigRRHH(newConfig);
         if (res.ok) {
             alert("Configuración de RRHH guardada con éxito.");
-            const { inicializarConfiguracion } = await import("./config.js");
-            await inicializarConfiguracion(); // Recargar cache
+            await inicializarConfiguracion();
         } else {
             alert("Error al guardar: " + res.error);
         }
@@ -123,11 +143,11 @@ async function loadRRHHConfigUI() {
     };
 }
 
-async function renderStaticFeriados() {
-    const { FERIADOS } = await import("./config.js");
+function renderStaticFeriados() {
     const container = document.getElementById("static-feriados-list");
     if (!container) return;
 
+    console.log("[Config-UI] Renderizando feriados estáticos...");
     container.innerHTML = "";
     Object.entries(FERIADOS).sort().forEach(([fecha, nombre]) => {
         const item = document.createElement("div");
@@ -150,7 +170,6 @@ async function renderStaticFeriados() {
         container.appendChild(item);
     });
 
-    // Eventos para personalizar
     container.querySelectorAll(".btn-edit-static").forEach(btn => {
         btn.onclick = () => {
             document.getElementById("feriado-fecha").value = btn.dataset.fecha;
