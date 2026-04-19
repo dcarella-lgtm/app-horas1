@@ -314,6 +314,135 @@ export function renderRegistros(registros) {
     });
 
     grid.appendChild(fragment);
+
+    // LÓGICA FASE 5: Analytics
+    const analyticsContainer = document.getElementById('analytics-container');
+    if (analyticsContainer) {
+        if (registros.length === 0) {
+            analyticsContainer.innerHTML = '';
+            analyticsContainer.style.display = 'none';
+        } else {
+            let sum50 = 0, sum100 = 0, sumFer = 0;
+            registros.forEach(r => {
+                sum50 += Number(r.total_50 || 0);
+                sum100 += Number(r.total_100 || 0);
+                sumFer += Number(r.total_feriado || 0);
+            });
+            const totalH = sum50 + sum100 + sumFer;
+            const pct50 = totalH > 0 ? (sum50 / totalH * 100).toFixed(1) : 0;
+            const pct100 = totalH > 0 ? (sum100 / totalH * 100).toFixed(1) : 0;
+            const pctFer = totalH > 0 ? (sumFer / totalH * 100).toFixed(1) : 0;
+            
+            // Top 5 Empleados por horas
+            const sortedByHours = [...registros].map(r => ({...r, th: Number(r.total_50||0)+Number(r.total_100||0)+Number(r.total_feriado||0)}))
+                .sort((a,b) => b.th - a.th)
+                .slice(0, 5);
+                
+            let topHtml = '';
+            sortedByHours.forEach((r, i) => {
+                let badgeClass = 'bg-slate-100 text-slate-700';
+                if (r.estado === 'aprobado') badgeClass = 'bg-green-100 text-green-700';
+                else if (r.estado === 'revision' || r.estado === 'pendiente') badgeClass = 'bg-yellow-100 text-yellow-700';
+                else if (r.estado === 'rechazado') badgeClass = 'bg-red-100 text-red-700';
+
+                topHtml += `
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-50/80 rounded-lg transition-colors border-b border-slate-50 last:border-0 last:pb-0">
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-slate-300 w-4 text-sm">${i+1}.</span>
+                            <div>
+                                <p class="text-sm font-bold text-slate-800">${r.nombre || '-'}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest rounded-full ${badgeClass}">${r.estado}</span>
+                            <span class="text-sm font-black text-blue-600 w-12 text-right">${r.th.toFixed(1)} hs</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Ranking problemas
+            const problemRecords = registros.filter(r => r.estado === 'rechazado' || r.estado === 'revision' || r.estado === 'pendiente');
+            const sortedProblems = problemRecords.sort((a,b) => {
+                if (a.estado === 'rechazado' && b.estado !== 'rechazado') return -1;
+                if (b.estado === 'rechazado' && a.estado !== 'rechazado') return 1;
+                return 0;
+            }).slice(0, 5);
+
+            let problemsHtml = '';
+            if (sortedProblems.length === 0) {
+                problemsHtml = `<div class="p-6 text-center h-full flex flex-col justify-center items-center gap-2"><span class="text-3xl">🏆</span><span class="text-sm font-bold text-emerald-600">Todo el equipo al día, sin problemas.</span></div>`;
+            } else {
+                sortedProblems.forEach(r => {
+                    problemsHtml += `
+                        <div class="flex items-center justify-between p-3 mb-2 bg-slate-50 rounded-lg border border-slate-100 hover:bg-slate-100/50 transition-colors">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-slate-800 text-sm">${r.nombre || '-'}</span>
+                                <span class="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">${r.estado} en periodo</span>
+                            </div>
+                            <span class="text-lg">
+                                ${r.estado === 'rechazado' ? '🔴' : '🟡'}
+                            </span>
+                        </div>
+                    `;
+                });
+            }
+
+            analyticsContainer.innerHTML = `
+                <!-- Distribución Card -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 lg:col-span-2">
+                    <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                        Distribución de Horas Extras
+                    </h3>
+                    
+                    <div class="w-full h-8 flex rounded-xl overflow-hidden shadow-inner bg-slate-100 mb-4">
+                        ${pct50 > 0 ? `<div style="width: ${pct50}%" class="bg-blue-500 hover:opacity-90 transition-all duration-1000"></div>` : ''}
+                        ${pct100 > 0 ? `<div style="width: ${pct100}%" class="bg-violet-500 hover:opacity-90 transition-all duration-1000 border-l border-white/20"></div>` : ''}
+                        ${pctFer > 0 ? `<div style="width: ${pctFer}%" class="bg-emerald-500 hover:opacity-90 transition-all duration-1000 border-l border-white/20"></div>` : ''}
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4 mt-2">
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-500"></span> Al 50%</p>
+                            <p class="text-xl font-black text-slate-700 mt-1">${sum50.toFixed(1)} hs <span class="text-xs font-semibold text-slate-400">(${pct50}%)</span></p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-violet-500"></span> Al 100%</p>
+                            <p class="text-xl font-black text-slate-700 mt-1">${sum100.toFixed(1)} hs <span class="text-xs font-semibold text-slate-400">(${pct100}%)</span></p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500"></span> Feriado</p>
+                            <p class="text-xl font-black text-slate-700 mt-1">${sumFer.toFixed(1)} hs <span class="text-xs font-semibold text-slate-400">(${pctFer}%)</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Empleados Card -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 flex flex-col h-full">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                        Top Empleados
+                    </h3>
+                    <div class="flex-1 flex flex-col gap-1 mt-2">
+                        ${topHtml || '<p class="text-sm text-slate-400 italic">No hay horas registradas.</p>'}
+                    </div>
+                </div>
+
+                <!-- Ranking Errores Card -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 flex flex-col h-full">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        Empleados con más problemas
+                    </h3>
+                    <div class="flex-1 flex flex-col mt-2">
+                        ${problemsHtml}
+                    </div>
+                </div>
+            `;
+            analyticsContainer.style.display = 'grid';
+        }
+    }
 }
 
 export function renderEmpleadoData(registros) {
