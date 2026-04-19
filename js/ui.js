@@ -264,46 +264,50 @@ export function renderRegistros(registros) {
         const totalExtras = Number(r.total_50||0) + Number(r.total_100||0) + Number(r.total_feriado||0);
         const estadoLimpio = r.estado ? r.estado.toLowerCase() : 'pendiente';
         
-        // Determinar si hay errores/warnings (simulado o basado en lógica)
-        // Nota: En el dashboard agrupado, necesitaríamos saber si algún día del empleado tiene error.
-        // Por ahora usamos una lógica visual si el estado es 'revision' o si hay extras sin aprobar.
-        const hasWarning = estadoLimpio === 'revision';
+        // Determinar el nivel del registro
         const hasError = estadoLimpio === 'rechazado';
+        const hasWarning = estadoLimpio === 'revision' || estadoLimpio === 'pendiente';
         
         const card = document.createElement('div');
-        card.className = `group bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer flex flex-col justify-between gap-4 ${hasError ? 'ring-2 ring-red-500 ring-offset-2' : ''}`;
+        
+        // Lógica de estilos y bordes basados en estado
+        let stateClasses = 'bg-white border-slate-100';
+        if (hasError) stateClasses = 'bg-red-50/50 border-red-300';
+        else if (hasWarning) stateClasses = 'bg-amber-50/30 border-amber-300';
+        
+        card.className = `group rounded-xl shadow-sm p-5 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border ${stateClasses} flex flex-col justify-between gap-4`;
         
         card.onclick = () => { window.location.href = `empleado.html?legajo=${r.legajo}`; };
+
+        // Badge estilos explícitos de Tailwind
+        let badgeClass = 'bg-slate-100 text-slate-700';
+        if (estadoLimpio === 'aprobado') badgeClass = 'bg-green-100 text-green-700';
+        else if (hasWarning) badgeClass = 'bg-yellow-100 text-yellow-700';
+        else if (hasError) badgeClass = 'bg-red-100 text-red-700';
 
         card.innerHTML = `
             <div class="flex justify-between items-start">
                 <div>
                     <h3 class="font-bold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">${r.nombre || '-'}</h3>
-                    <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-0.5">Legajo: ${r.legajo || '-'}</p>
+                    <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-0.5">${r.legajo || '-'}</p>
                 </div>
-                <span class="badge ${estadoLimpio}">${estadoLimpio}</span>
+                <span class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full ${badgeClass}">${estadoLimpio}</span>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 my-2">
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p class="text-[10px] uppercase font-bold text-slate-400 mb-1">Días Reportados</p>
-                    <p class="text-xl font-bold text-slate-700">${r.dias || 0} <span class="text-sm font-normal text-slate-400">días</span></p>
-                </div>
-                <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
-                    <p class="text-[10px] uppercase font-bold text-blue-400 mb-1">Total Extras</p>
-                    <p class="text-xl font-bold text-blue-700">${totalExtras > 0 ? (totalExtras + ' hs') : '-'}</p>
-                </div>
+            <div class="mt-1">
+                <p class="text-[10px] uppercase font-bold text-slate-400 mb-0.5">Total de Horas</p>
+                <p class="text-[22px] font-black text-slate-800">${totalExtras > 0 ? totalExtras.toFixed(1) + ' hs' : '0 hs'}</p>
             </div>
 
-            <div class="flex items-center justify-between pt-2 border-t border-slate-50">
+            <div class="flex items-center justify-between pt-3 border-t ${hasError ? 'border-red-200' : hasWarning ? 'border-amber-200' : 'border-slate-100'} mt-2">
                 <div class="flex items-center gap-1.5">
-                    ${hasError ? '<span class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span><span class="text-xs font-bold text-red-600">Requiere Acción Urgente</span>' : 
-                      hasWarning ? '<span class="flex h-2 w-2 rounded-full bg-amber-500"></span><span class="text-xs font-bold text-amber-600">Revisión pendiente</span>' :
-                      '<span class="flex h-2 w-2 rounded-full bg-emerald-500"></span><span class="text-xs font-bold text-emerald-600">Todo en orden</span>'}
+                    ${hasError ? '<span class="text-xs font-bold text-red-600 flex items-center gap-1"><span>⚠</span> Inconsistencia</span>' : 
+                      hasWarning ? '<span class="text-xs font-bold text-amber-600 flex items-center gap-1"><span>⚠</span> Revisar</span>' :
+                      '<span class="text-xs font-bold text-emerald-600 flex items-center gap-1"><span>✔</span> OK</span>'}
                 </div>
-                <button class="text-blue-600 group-hover:translate-x-1 transition-transform">
+                <div class="text-blue-600 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
-                </button>
+                </div>
             </div>
         `;
         fragment.appendChild(card);
