@@ -6,6 +6,9 @@
     <title>App Horas Extras - Detalle Empleado</title>
     <link rel="stylesheet" href="css/styles.css">
     
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <!-- SheetJS (para exportación y carga) -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
@@ -37,29 +40,37 @@
         </div>
     </header>
     <main>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+        <div class="flex justify-between items-center mb-8">
             <div>
-                <h2 style="margin:0;">Detalle: <span id="empleado-legajo-title" style="color:#0081cf;">...</span></h2>
-                <div style="margin-top: 5px; display: flex; align-items: center; gap: 10px;">
-                    <span id="empleado-estado-badge" style="font-size:0.75em; text-transform: uppercase; font-weight: 800; border-radius: 4px;"></span>
-                    <span id="empleado-status-counters" style="color: #666; font-size: 0.85em; font-weight: 600;"></span>
+                <h2 class="m-0 text-2xl font-bold text-gray-800">Detalle: <span id="empleado-legajo-title" class="text-blue-600">...</span></h2>
+                <div class="mt-2 flex items-center gap-3">
+                    <span id="empleado-estado-badge" class="text-xs uppercase font-extrabold rounded-md px-2 py-1"></span>
+                    <span id="empleado-status-counters" class="text-gray-500 text-sm font-semibold"></span>
                 </div>
             </div>
-            <div style="display: flex; gap: 12px;">
-                <button id="btn-aprobar-empleado" style="padding: 10px 20px; background: #2e7d32; border: none; cursor:pointer; color: white; border-radius:8px; display:none; font-weight:bold; transition: background 0.2s;">✅ Aprobar Reporte</button>
-                <button onclick="window.history.back()" style="padding: 10px 20px; background: white; border: 1px solid #ddd; cursor:pointer; color: #555; border-radius:8px; font-weight: 600;">Volver</button>
+            <div class="flex gap-3">
+                <button id="btn-aprobar-empleado" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-sm transition-all duration-150 ease-in-out flex items-center gap-2 hidden" style="display:none;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Aprobar Reporte
+                </button>
+                <button onclick="window.history.back()" class="bg-white hover:bg-gray-50 text-gray-600 border border-gray-300 px-5 py-2.5 rounded-lg font-semibold shadow-sm transition-all duration-150 ease-in-out flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Volver
+                </button>
             </div>
         </div>
 
         <div id="empleado-container">
             <!-- Estados -->
-            <div id="emp-loading-state" style="display: none; padding: 40px; text-align: center; color: #666;">
-                Cargando datos del empleado... ⏳
+            <div id="emp-loading-state" class="hidden p-10 text-center text-gray-500" style="display: none;">
+                <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Cargando datos del empleado...
             </div>
-            <div id="emp-empty-state" style="display: none; padding: 40px; text-align: center; color: #666; background: #fff; border-radius: 12px; border: 1px dashed #ccc;">
+            <div id="emp-empty-state" class="hidden p-10 text-center text-gray-500 bg-white rounded-xl border border-dashed border-gray-300 shadow-sm" style="display: none;">
                 No se encontró el legajo o el empleado no tiene registros.
             </div>
-            <div id="emp-error-state" style="display: none; padding: 20px; background: #ffebee; color: #c62828; border-radius: 8px; text-align: center;">
+            <div id="emp-error-state" class="hidden p-5 bg-red-50 text-red-700 rounded-lg text-center border border-red-100 flex items-center justify-center gap-2" style="display: none;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Ocurrió un error al cargar la información.
             </div>
 
@@ -84,8 +95,9 @@
                 </tbody>
             </table>
             
-            <div id="emp-actions" style="display: none; margin-top: 25px; text-align: right;">
-                <button id="btn-guardar-empleado" style="padding: 12px 25px; background-color: #0081cf; color: white; border: none; cursor: pointer; border-radius: 8px; font-weight: bold; box-shadow: 0 4px 6px rgba(0, 129, 207, 0.2);">
+            <div id="emp-actions" class="hidden mt-8 text-right" style="display: none;">
+                <button id="btn-guardar-empleado" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow-md transition-all duration-150 ease-in-out inline-flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
                     Guardar Correcciones
                 </button>
             </div>

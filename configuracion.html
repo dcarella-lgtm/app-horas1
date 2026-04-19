@@ -6,6 +6,9 @@
     <title>App Horas Extras - Configuración</title>
     <link rel="stylesheet" href="css/styles.css">
     
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <!-- SheetJS (para exportación y carga) -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
@@ -38,63 +41,72 @@
         </div>
     </header>
     <main>
-        <div style="margin-bottom: 30px;">
-            <h2 style="margin: 0;">Configuración de Sistema</h2>
-            <p style="color: #666; margin: 5px 0 0 0;">Gestión de feriados, límites de RRHH y parámetros globales.</p>
+        <div class="mb-8">
+            <h2 class="m-0 text-2xl font-bold text-gray-800">Configuración de Sistema</h2>
+            <p class="text-gray-500 mt-2">Gestión de feriados, límites de RRHH y parámetros globales.</p>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: start;">
+        <div class="grid grid-cols-2 gap-8 items-start">
             
             <!-- Columna Izquierda: Feriados -->
-            <div style="display: flex; flex-direction: column; gap: 30px;">
+            <div class="flex flex-col gap-8">
                 <!-- Formulario para agregar feriado -->
-                <section class="config-section" style="background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eee;">
-                    <h3 style="margin-top: 0; margin-bottom: 20px;">➕ Agregar Nuevo Feriado</h3>
-                    <form id="form-feriado" style="display: flex; flex-direction: column; gap: 15px;">
+                <section class="config-section bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="mt-0 mb-6 text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Agregar Nuevo Feriado
+                    </h3>
+                    <form id="form-feriado" class="flex flex-col gap-4">
                         <div>
-                            <label style="display: block; font-size: 0.85em; margin-bottom: 5px; color: #555; font-weight: 600;">Fecha del Feriado</label>
-                            <input type="date" id="feriado-fecha" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; transition: border 0.2s;">
+                            <label class="block text-sm font-semibold text-gray-600 mb-2">Fecha del Feriado</label>
+                            <input type="date" id="feriado-fecha" required class="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                         </div>
                         <div>
-                            <label style="display: block; font-size: 0.85em; margin-bottom: 5px; color: #555; font-weight: 600;">Nombre descriptivo</label>
-                            <input type="text" id="feriado-nombre" placeholder="Ej: Día del Perfumista" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none;">
+                            <label class="block text-sm font-semibold text-gray-600 mb-2">Nombre descriptivo</label>
+                            <input type="text" id="feriado-nombre" placeholder="Ej: Día del Perfumista" required class="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                         </div>
-                        <button type="submit" id="btn-add-feriado" style="padding: 12px; background: #0081cf; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 5px;">Añadir Feriado</button>
+                        <button type="submit" id="btn-add-feriado" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg font-bold shadow-sm transition-all duration-150 ease-in-out">Añadir Feriado</button>
                     </form>
                 </section>
 
                 <!-- Configuración de RRHH -->
-                <section class="config-section" style="background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eee;">
-                    <h3 style="margin-top: 0; margin-bottom: 10px; color: #333;">⚙️ Parámetros RRHH</h3>
-                    <p style="color: #666; font-size: 0.85em; margin-bottom: 20px;">Límites mensuales para alertas en estadísticas.</p>
+                <section class="config-section bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="mt-0 mb-2 text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Parámetros RRHH
+                    </h3>
+                    <p class="text-gray-500 text-sm mb-6">Límites mensuales para alertas en estadísticas.</p>
                     
-                    <form id="form-config-rrhh" style="display: flex; flex-direction: column; gap: 15px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <form id="form-config-rrhh" class="flex flex-col gap-4">
+                        <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label style="display: block; font-size: 0.8em; margin-bottom: 5px; color: #666; font-weight: 600;">Límite 50% (hs)</label>
-                                <input type="number" id="limit-50" value="40" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                                <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Límite 50% (hs)</label>
+                                <input type="number" id="limit-50" value="40" class="w-full p-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                             </div>
                             <div>
-                                <label style="display: block; font-size: 0.8em; margin-bottom: 5px; color: #666; font-weight: 600;">Límite 100% (hs)</label>
-                                <input type="number" id="limit-100" value="20" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                                <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Límite 100% (hs)</label>
+                                <input type="number" id="limit-100" value="20" class="w-full p-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                             </div>
                         </div>
                         <div>
-                            <label style="display: block; font-size: 0.8em; margin-bottom: 5px; color: #666; font-weight: 600;">Palabras clave Demoras</label>
-                            <input type="text" id="keywords-demora" value="menor jornada, tarde, demora" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-                            <small style="color: #999; display: block; margin-top: 5px; font-size: 0.75em;">Separadas por coma. Se usan para detectar llegadas tarde en la columna RRHH.</small>
+                            <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Palabras clave Demoras</label>
+                            <input type="text" id="keywords-demora" value="menor jornada, tarde, demora" class="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                            <small class="text-gray-400 block mt-1">Separadas por coma. Se usan para detectar llegadas tarde en la columna RRHH.</small>
                         </div>
-                        <button type="submit" id="btn-save-rrhh" style="padding: 12px; background: #2e7d32; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 5px;">Guardar Cambios</button>
+                        <button type="submit" id="btn-save-rrhh" class="mt-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-lg font-bold shadow-sm transition-all duration-150 ease-in-out">Guardar Cambios</button>
                     </form>
                 </section>
             </div>
 
             <!-- Columna Derecha: Lista Feriados -->
-            <div style="display: flex; flex-direction: column; gap: 30px;">
+            <div class="flex flex-col gap-8">
                 <!-- Lista de feriados personalizados -->
-                <section class="config-section" style="background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eee;">
-                    <h3 style="margin-top: 0; margin-bottom: 20px;">📅 Feriados Personalizados</h3>
-                    <div id="config-loading" style="padding: 20px; color: #666; text-align: center;">Buscando en Supabase...</div>
+                <section class="config-section bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="mt-0 mb-6 text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Feriados Personalizados
+                    </h3>
+                    <div id="config-loading" class="p-6 text-center text-gray-500">Buscando en Supabase...</div>
                     <table class="corporate-table" id="feriados-table" style="display: none; width: 100%;">
                         <thead>
                             <tr>
@@ -106,16 +118,19 @@
                         <tbody id="feriados-tbody">
                         </tbody>
                     </table>
-                    <div id="no-feriados-msg" style="display: none; padding: 30px; color: #999; border: 1px dashed #ddd; border-radius: 8px; text-align: center; font-size: 0.9em;">
+                    <div id="no-feriados-msg" class="hidden p-8 text-center text-gray-500 border border-dashed border-gray-300 rounded-lg mt-4" style="display: none;">
                         No has cargado feriados propios aún.
                     </div>
                 </section>
 
                 <!-- Feriados Precargados (Desactivables) -->
-                <section class="config-section" style="background: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee;">
-                    <h3 style="margin-top: 0; font-size: 1em; color: #555;">ℹ️ Feriados Nacionales 2026</h3>
-                    <p style="font-size: 0.8em; color: #777; margin-bottom: 15px;">Puedes "Desactivar" los nacionales que no apliquen a tu empresa.</p>
-                    <div id="static-feriados-list" style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+                <section class="config-section bg-gray-50 p-8 rounded-xl border border-gray-200">
+                    <h3 class="mt-0 mb-2 text-md font-bold text-gray-700 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Feriados Nacionales 2026
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-6">Puedes "Desactivar" los nacionales que no apliquen a tu empresa.</p>
+                    <div id="static-feriados-list" class="grid grid-cols-1 gap-3">
                         <!-- Inyectado por JS -->
                     </div>
                 </section>
