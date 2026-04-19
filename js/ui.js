@@ -112,16 +112,64 @@ export function renderRegistros(registros) {
         return;
     }
 
-    // Actualizamos las Cards Superiores si existen
-    const updateMetric = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.innerText = val;
-    };
+    // Lógica Fase 2: Cálculo de KPIs basados en empleados agrupados
+    const kpiContainer = document.getElementById('kpi-container');
+    if (kpiContainer) {
+        const totalErrores = registros.filter(r => r.estado === 'rechazado').length;
+        const totalRevision = registros.filter(r => r.estado === 'revision' || r.estado === 'pendiente').length;
+        const totalAprobados = registros.filter(r => r.estado === 'aprobado').length;
+        const totalHoras = registros.reduce((acc, r) => acc + (Number(r.total_50||0) + Number(r.total_100||0) + Number(r.total_feriado||0)), 0);
 
-    updateMetric('metric-total', registros.length);
-    updateMetric('metric-aprobados', registros.filter(r => r.estado === 'aprobado').length);
-    updateMetric('metric-revision', registros.filter(r => r.estado === 'revision').length);
-    updateMetric('metric-pendientes', registros.filter(r => r.estado === 'pendiente').length);
+        kpiContainer.innerHTML = `
+            <!-- Card: Errores -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-red-500">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Con errores</p>
+                    <span class="bg-red-50 text-red-500 p-1.5 rounded-lg">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </span>
+                </div>
+                <h3 class="text-3xl font-black text-slate-800 mt-2">${totalErrores}</h3>
+                <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">Requieren atención inmediata</p>
+            </div>
+
+            <!-- Card: Revisión -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-amber-500">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">En revisión / Pend.</p>
+                    <span class="bg-amber-50 text-amber-500 p-1.5 rounded-lg">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </span>
+                </div>
+                <h3 class="text-3xl font-black text-slate-800 mt-2">${totalRevision}</h3>
+                <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">Pendientes de aprobación</p>
+            </div>
+
+            <!-- Card: Aprobados -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-emerald-500">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Aprobados</p>
+                    <span class="bg-emerald-50 text-emerald-500 p-1.5 rounded-lg">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </span>
+                </div>
+                <h3 class="text-3xl font-black text-slate-800 mt-2">${totalAprobados}</h3>
+                <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">Listos para liquidación</p>
+            </div>
+
+            <!-- Card: Horas Totales -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-blue-600">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Horas Totales</p>
+                    <span class="bg-blue-50 text-blue-600 p-1.5 rounded-lg">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </span>
+                </div>
+                <h3 class="text-3xl font-black text-slate-800 mt-2">${totalHoras.toFixed(1)} <span class="text-lg font-bold text-slate-400">hs</span></h3>
+                <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">Acumulado del periodo</p>
+            </div>
+        `;
+    }
 
     toggleStates('', 'table');
     grid.innerHTML = '';
