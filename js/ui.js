@@ -171,6 +171,71 @@ export function renderRegistros(registros) {
         `;
     }
 
+    const alertsContainer = document.getElementById('alerts-container');
+    if (alertsContainer) {
+        let alertasHTML = '';
+        const alertas = [];
+
+        // 1. Errores críticos (🔴): Empleados con inconsistencias
+        const cantErrores = registros.filter(r => r.estado === 'rechazado').length;
+        if (cantErrores > 0) {
+            alertas.push({
+                color: 'red',
+                icono: '🔴',
+                texto: `${cantErrores} empleado(s) con inconsistencias`
+            });
+        }
+
+        // 2. Advertencias (🟡): Empleados sin fichada / pendientes de revisión
+        const cantWarnings = registros.filter(r => r.estado === 'pendiente' || r.estado === 'revision').length;
+        if (cantWarnings > 0) {
+            alertas.push({
+                color: 'yellow',
+                icono: '🟡',
+                texto: `${cantWarnings} empleado(s) con revisión pendiente o sin fichada`
+            });
+        }
+
+        // 3. Casos especiales (🔴): Extras especiales (domingos/100% o feriados)
+        const cantEspeciales = registros.filter(r => Number(r.total_100) > 0 || Number(r.total_feriado) > 0).length;
+        if (cantEspeciales > 0) {
+            alertas.push({
+                color: 'red',
+                icono: '🔴',
+                texto: `${cantEspeciales} empleado(s) con horas al 100% (o feriado)`
+            });
+        }
+
+        if (alertas.length === 0) {
+            alertasHTML = `
+                <div class="flex items-center gap-2 p-2">
+                    <span class="text-slate-600 font-semibold text-sm">Sin alertas ✔</span>
+                </div>
+            `;
+        } else {
+            alertasHTML = `
+                <div class="flex flex-col gap-2">
+            `;
+            
+            alertas.forEach(alerta => {
+                const bgClass = alerta.color === 'red' ? 'bg-red-50/50 border border-red-100 hover:bg-red-50' : 'bg-amber-50/50 border border-amber-100 hover:bg-amber-50';
+                const textClass = alerta.color === 'red' ? 'text-red-700' : 'text-amber-700';
+                
+                alertasHTML += `
+                    <div class="flex items-center gap-3 p-3 rounded-lg ${bgClass} cursor-pointer transition-colors shadow-sm">
+                        <span class="text-sm">${alerta.icono}</span>
+                        <span class="font-semibold text-sm ${textClass}">${alerta.texto}</span>
+                    </div>
+                `;
+            });
+            
+            alertasHTML += '</div>';
+        }
+
+        alertsContainer.innerHTML = alertasHTML;
+        alertsContainer.style.display = 'block';
+    }
+
     toggleStates('', 'table');
     grid.innerHTML = '';
 
