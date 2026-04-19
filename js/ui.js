@@ -3,7 +3,7 @@ import { getDetalleFeriado } from "./config.js";
 
 // Función unificada para ocultar todo y mostrar el estado deseado
 function toggleStates(prefix, state) {
-    const ids = ['loading-state', 'empty-state', 'error-state', 'registros-table', 'actions'];
+    const ids = ['loading-state', 'empty-state', 'error-state', 'registros-grid', 'registros-table', 'emp-semanas-container', 'actions'];
     ids.forEach(id => {
         const elId = prefix ? `${prefix}-${id}` : id;
         const el = document.getElementById(elId);
@@ -12,9 +12,18 @@ function toggleStates(prefix, state) {
 
     const activeId = prefix ? `${prefix}-${state}-state` : `${state}-state`;
     if (state === 'table') {
+        const gridId = prefix ? `${prefix}-registros-grid` : 'registros-grid';
         const tblId = prefix ? `${prefix}-registros-table` : 'registros-table';
+        const semId = prefix ? `${prefix}-semanas-container` : 'emp-semanas-container';
+        
+        const grid = document.getElementById(gridId);
+        if (grid) grid.style.display = 'grid';
+        
         const tbl = document.getElementById(tblId);
         if (tbl) tbl.style.display = 'table';
+        
+        const sem = document.getElementById(semId);
+        if (sem) sem.style.display = 'flex';
         
         const actsId = prefix ? `${prefix}-actions` : 'actions';
         const acts = document.getElementById(actsId);
@@ -57,9 +66,46 @@ export function showLoading(isEmpleado = false) { toggleStates(isEmpleado ? 'emp
 export function showEmpty(isEmpleado = false) { toggleStates(isEmpleado ? 'emp' : '', 'empty'); }
 export function showError(isEmpleado = false) { toggleStates(isEmpleado ? 'emp' : '', 'error'); }
 
+// Helper para agrupar registros por semana ISO (comienza lunes)
+export function agruparPorSemana(registros) {
+    const semanas = {};
+    
+    registros.forEach(r => {
+        const date = new Date(r.fecha + 'T12:00:00'); // Usar mediodía para evitar problemas de TZ
+        if (isNaN(date.getTime())) return;
+
+        // Cálculo de Semana ISO
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        
+        const year = d.getUTCFullYear();
+        const key = `${year}-W${weekNo}`;
+
+        if (!semanas[key]) {
+            semanas[key] = {
+                weekNo,
+                year,
+                registros: []
+            };
+        }
+        semanas[key].registros.push(r);
+    });
+
+    // Ordenar semanas cronológicamente
+    return Object.keys(semanas)
+        .sort()
+        .reduce((obj, key) => {
+            obj[key] = semanas[key];
+            return obj;
+        }, {});
+}
+
 export function renderRegistros(registros) {
-    const tbody = document.getElementById('registros-tbody');
-    if (!tbody) return; 
+    const grid = document.getElementById('registros-grid');
+    if (!grid) return; 
     
     if (!registros || registros.length === 0) {
         showEmpty(false);
@@ -67,70 +113,91 @@ export function renderRegistros(registros) {
     }
 
     // Actualizamos las Cards Superiores si existen
-    const mTotal = document.getElementById('metric-total');
-    if (mTotal) {
-        mTotal.innerText = registros.length;
-        document.getElementById('metric-aprobados').innerText = registros.filter(r => r.estado === 'aprobado').length;
-        document.getElementById('metric-revision').innerText = registros.filter(r => r.estado === 'revision').length;
-        document.getElementById('metric-pendientes').innerText = registros.filter(r => r.estado === 'pendiente').length;
-    }
+    const updateMetric = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = val;
+    };
+
+    updateMetric('metric-total', registros.length);
+    updateMetric('metric-aprobados', registros.filter(r => r.estado === 'aprobado').length);
+    updateMetric('metric-revision', registros.filter(r => r.estado === 'revision').length);
+    updateMetric('metric-pendientes', registros.filter(r => r.estado === 'pendiente').length);
 
     toggleStates('', 'table');
-    tbody.innerHTML = '';
+    grid.innerHTML = '';
+
+    // Fragmento para performance
+    const fragment = document.createDocumentFragment();
 
     registros.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.style.cursor = 'pointer';
-        tr.onclick = () => { window.location.href = `empleado.html?legajo=${r.legajo}`; };
-        
-        // Sumar horas extras usando el objeto agrupado de app.js (50 + 100 + feriado)
         const totalExtras = Number(r.total_50||0) + Number(r.total_100||0) + Number(r.total_feriado||0);
-        
-        // Mapeo del estado a las clases Badge limpias
         const estadoLimpio = r.estado ? r.estado.toLowerCase() : 'pendiente';
+        
+        // Determinar si hay errores/warnings (simulado o basado en lógica)
+        // Nota: En el dashboard agrupado, necesitaríamos saber si algún día del empleado tiene error.
+        // Por ahora usamos una lógica visual si el estado es 'revision' o si hay extras sin aprobar.
+        const hasWarning = estadoLimpio === 'revision';
+        const hasError = estadoLimpio === 'rechazado';
+        
+        const card = document.createElement('div');
+        card.className = `group bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer flex flex-col justify-between gap-4 ${hasError ? 'ring-2 ring-red-500 ring-offset-2' : ''}`;
+        
+        card.onclick = () => { window.location.href = `empleado.html?legajo=${r.legajo}`; };
 
-        tr.innerHTML = `
-            <td>
-                <div style="font-weight: 700; color: #2b2d42;">${r.nombre || '-'}</div>
-                <div style="font-size: 0.8em; color: #8d99ae; margin-top:2px;">Legajo: ${r.legajo || '-'}</div>
-            </td>
-            <td class="text-center">
-                <span style="font-weight: 600;">${r.dias || 0}</span> d.
-            </td>
-            <td class="text-center" style="font-weight: bold; color: #0056b3;">
-                ${totalExtras > 0 ? (totalExtras + ' hs') : '<span style="color:#adb5bd">-</span>'}
-            </td>
-            <td class="text-center">
+        card.innerHTML = `
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">${r.nombre || '-'}</h3>
+                    <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-0.5">Legajo: ${r.legajo || '-'}</p>
+                </div>
                 <span class="badge ${estadoLimpio}">${estadoLimpio}</span>
-            </td>
-            <td class="text-center">
-                <button class="btn-action">Revisar 👉</button>
-            </td>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 my-2">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="text-[10px] uppercase font-bold text-slate-400 mb-1">Días Reportados</p>
+                    <p class="text-xl font-bold text-slate-700">${r.dias || 0} <span class="text-sm font-normal text-slate-400">días</span></p>
+                </div>
+                <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                    <p class="text-[10px] uppercase font-bold text-blue-400 mb-1">Total Extras</p>
+                    <p class="text-xl font-bold text-blue-700">${totalExtras > 0 ? (totalExtras + ' hs') : '-'}</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-50">
+                <div class="flex items-center gap-1.5">
+                    ${hasError ? '<span class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span><span class="text-xs font-bold text-red-600">Requiere Acción Urgente</span>' : 
+                      hasWarning ? '<span class="flex h-2 w-2 rounded-full bg-amber-500"></span><span class="text-xs font-bold text-amber-600">Revisión pendiente</span>' :
+                      '<span class="flex h-2 w-2 rounded-full bg-emerald-500"></span><span class="text-xs font-bold text-emerald-600">Todo en orden</span>'}
+                </div>
+                <button class="text-blue-600 group-hover:translate-x-1 transition-transform">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </button>
+            </div>
         `;
-        tbody.appendChild(tr);
+        fragment.appendChild(card);
     });
+
+    grid.appendChild(fragment);
 }
 
 export function renderEmpleadoData(registros) {
-    const tbody = document.getElementById('emp-registros-tbody');
-    if (!tbody) return; 
+    const container = document.getElementById('emp-semanas-container');
+    if (!container) return; 
     
     if (!registros || registros.length === 0) {
         showEmpty(true);
         return;
     }
 
-    // Setear título
     const title = document.getElementById('empleado-legajo-title');
     if (title) title.innerText = `${registros[0].nombre} (${registros[0].legajo})`;
 
     toggleStates('emp', 'table');
-    tbody.innerHTML = '';
-
-    // Guardar copia global en navegador
+    
+    // Guardar copia global
     window.__currentEmpleadoRecords = registros;
     
-    // Calcular estado general del empleado 
     const todosAprobados = registros.every(r => r.estado === 'aprobado');
     let estadoGeneral = 'pendiente';
     if (todosAprobados) estadoGeneral = 'aprobado';
@@ -142,218 +209,162 @@ export function renderEmpleadoData(registros) {
     const btnGuardar = document.getElementById('btn-guardar-empleado');
 
     if (estadoBadge) {
-        let color = '#757575';
-        if (estadoGeneral === 'aprobado') color = '#388e3c';
-        else if (estadoGeneral === 'rechazado') color = '#d32f2f';
-        else if (estadoGeneral === 'revision') color = '#f57c00';
+        let colorClass = 'bg-slate-100 text-slate-600';
+        if (estadoGeneral === 'aprobado') colorClass = 'bg-emerald-100 text-emerald-700';
+        else if (estadoGeneral === 'rechazado') colorClass = 'bg-red-100 text-red-700';
+        else if (estadoGeneral === 'revision') colorClass = 'bg-amber-100 text-amber-700';
 
         estadoBadge.innerText = estadoGeneral.toUpperCase();
-        estadoBadge.style.background = color;
-        estadoBadge.style.color = 'white';
-        estadoBadge.style.padding = '4px 8px';
-        estadoBadge.style.borderRadius = '12px';
+        estadoBadge.className = `text-xs font-bold rounded-full px-3 py-1 ${colorClass}`;
+        estadoBadge.style = ''; // Limpiar inline anterior
     }
 
-    if (btnAprobar) {
-        btnAprobar.style.display = todosAprobados ? 'none' : 'inline-block';
-    }
-    
-    if (btnGuardar) {
-        btnGuardar.style.display = todosAprobados ? 'none' : 'inline-block';
-    }
+    if (btnAprobar) btnAprobar.style.display = todosAprobados ? 'none' : 'inline-flex';
+    if (btnGuardar) btnGuardar.style.display = todosAprobados ? 'none' : 'inline-flex';
 
     const isDisabled = todosAprobados;
-
     let __empRowErrors = 0;
     let __empRowWarnings = 0;
 
-    registros.forEach(r => {
-        const tr = document.createElement('tr');
+    const semanas = agruparPorSemana(registros);
+    const listContainer = container;
+    listContainer.innerHTML = '';
+    listContainer.className = 'flex flex-col gap-8 mt-2';
+
+    Object.keys(semanas).forEach(weekKey => {
+        const weekData = semanas[weekKey];
+        const weekBlock = document.createElement('div');
+        weekBlock.className = 'bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden';
         
-        // 1. Días de la semana desde r.fecha
-        let fechaLimpia = r.fecha || '-';
-        let isSunday = false;
-        let isSaturday = false;
-        let isWorkday = true;
+        // Header de Semana
+        const firstDay = weekData.registros[0].fecha.split('-').reverse().join('/');
+        const lastDay = weekData.registros[weekData.registros.length - 1].fecha.split('-').reverse().join('/');
         
-        if (r.fecha) {
-            const temp = new Date(r.fecha + 'T00:00:00');
-            if (!isNaN(temp.getTime())) {
-                const diaInt = temp.getDay();
-                isSunday = diaInt === 0;
-                isSaturday = diaInt === 6;
-                isWorkday = diaInt >= 1 && diaInt <= 5;
-                const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-                fechaLimpia = `<strong>${dias[diaInt]}</strong> <span style="color:#777; font-size:0.9em; margin-left: 4px;">${r.fecha.split('-').reverse().join('/')}</span>`;
-            }
-        }
-
-        // CONTROL DE FERIADOS
-        const nombreFeriado = getDetalleFeriado(r.fecha);
-        const isFeriado = nombreFeriado !== null;
-
-        const actIngreso = r.hora_ingreso === 0 || r.hora_ingreso === null || r.hora_ingreso === "" ? null : convertirHoraDecimal(r.hora_ingreso);
-        const actSalida = r.hora_salida === 0 || r.hora_salida === null || r.hora_salida === "" ? null : convertirHoraDecimal(r.hora_salida);
-        
-        const isNoActivity = !actIngreso && !actSalida;
-        let isJustified = false;
-        let actMsg = '⚠️ Sin actividad / Revisar';
-        let actColor = '#856404';
-        let actBg = '#fff3cd';
-
-        // Evaluar justificaciones
-        const isWeekend = isSunday || isSaturday;
-        if (r.ausencias && String(r.ausencias).trim() !== '') {
-            isJustified = true;
-            actMsg = `ℹ️ ${String(r.ausencias).trim()}`;
-            actColor = '#0056b3';
-            actBg = '#e8f4fd';
-        } else if (isWeekend && isNoActivity) {
-            isJustified = true;
-            actMsg = `⏸️ Fin de Semana`;
-            actColor = '#555555';
-            actBg = '#f0f0f0';
-        }
-
-        let actHTML = '';
-        if (isNoActivity) {
-            actHTML = `<td colspan="2" style="padding: 12px; text-align: center; border-bottom: 1px solid #eee; border-right: 1px solid #ddd; background-color: ${actBg}; color: ${actColor}; font-size: 0.85em; font-weight: bold;">${actMsg}</td>`;
-        } else {
-            actHTML = `
-                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color: #555;">${actIngreso || '-'}</td>
-                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; color: #555; border-right: 1px solid #ddd;">${actSalida || '-'}</td>
-            `;
-        }
-
-        // 3. Comparador Dual (Sistema Automático vs Carga del Manager)
-        const formatComparedInput = (autoStr, mgrStr, fieldId) => {
-            const autoVal = Number(autoStr) || 0;
-            const mgrVal = Number(mgrStr) || 0;
-            const diff = autoVal !== mgrVal;
-            
-            const disabledAttr = isDisabled ? 'disabled' : '';
-            
-            // Resaltes visuales
-            const inBg = isDisabled ? '#f9f9f9' : (diff ? '#fffbf0' : '#fff');
-            const inBorder = diff ? 'border: 1px solid #ff9800;' : 'border: 1px solid #ccc;';
-            const highlightClass = diff && !isDisabled ? 'background-color: #fff9e6;' : ''; 
-            const valColor = diff && !isDisabled ? '#d84315' : '#0056b3';
-
-            return `
-                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 4px; border-radius: 4px; ${highlightClass}">
-                    <span style="color: #6c757d; font-size: 0.9em; min-width: 25px;" title="Cálculo del Sistema">${autoVal}</span>
-                    <span style="color: #ddd;">|</span>
-                    <input type="number" step="0.5" class="edit-input" data-id="${r.id}" data-field="${fieldId}" value="${mgrVal}" ${disabledAttr} style="background-color:${inBg}; width: 60px; padding: 4px 6px; text-align:right; border-radius:3px; font-weight: bold; color: ${valColor}; ${inBorder} transition: all 0.2s;">
-                </div>
-            `;
-        };
-
-        const formatText = (val, id) => {
-            const disabledAttr = isDisabled ? 'disabled' : '';
-            const bgColor = isDisabled ? '#f9f9f9' : '#fff';
-            return `<input type="text" class="edit-input" data-id="${r.id}" data-field="${id}" value="${val || ''}" ${disabledAttr} style="background-color:${bgColor}; width: 100%; padding: 5px; border: 1px solid #ccc; border-radius:3px;">`;
-        };
-
-        // 4. Lógica de Priorización Visual (Error, Warning, Ok)
-        let rowStatus = 'ok';
-        
-        const diff50 = Number(r.horas_50_auto || 0) !== Number(r.horas_50_manager || 0);
-        const diff100 = Number(r.horas_100_auto || 0) !== Number(r.horas_100_manager || 0);
-        const diffFer = Number(r.horas_feriado_auto || 0) !== Number(r.horas_feriado_manager || 0);
-        const hasDiff = diff50 || diff100 || diffFer;
-        
-        const sumAuto = Number(r.horas_50_auto || 0) + Number(r.horas_100_auto || 0) + Number(r.horas_feriado_auto || 0);
-        const sumMgr = Number(r.horas_50_manager || 0) + Number(r.horas_100_manager || 0) + Number(r.horas_feriado_manager || 0);
-        const isTodoCero = sumAuto === 0 && sumMgr === 0 && isNoActivity;
-
-        // Evaluar reglas de negocio para UX
-        if (hasDiff || (isSunday && Number(r.horas_50_manager || 0) > 0)) {
-            rowStatus = 'error';
-            __empRowErrors++;
-        } else if ((isNoActivity && !isJustified) || (isTodoCero && isWorkday && !isJustified)) {
-            rowStatus = 'warning';
-            __empRowWarnings++;
-        }
-
-        // Aplicar estilos según clasificación
-        let msgFilas = '';
-        if (rowStatus === 'error') {
-            tr.style.backgroundColor = '#ffe5e5';
-            msgFilas = '<div style="color: #c62828; font-size: 0.8em; margin-top: 6px;"><strong>⚠ Diferencia detectada → revisar</strong></div>';
-        } else if (rowStatus === 'warning') {
-            tr.style.backgroundColor = '#fff8e1';
-            msgFilas = '<div style="color: #856404; font-size: 0.8em; margin-top: 6px;"><strong>⚠ Revisar ausencia o inconsistencia</strong></div>';
-            if (isTodoCero) tr.style.opacity = '0.7'; 
-        } else {
-            msgFilas = '<div style="color: #388e3c; font-size: 0.8em; margin-top: 6px;">✔ Correcto</div>';
-        }
-
-        // Lógica de Alerta de Feriado (si no fue cargado en la columna correspondiente)
-        if (isFeriado && Number(r.horas_feriado_manager || 0) === 0 && !isNoActivity) {
-            tr.style.backgroundColor = '#fff3e0'; // Naranja muy claro para feriado pendiente
-            msgFilas = `<div style="color: #e65100; font-size: 0.8em; margin-top: 6px;"><strong>⚠ Es FERIADO (${nombreFeriado}) → Revisar recargo</strong></div>`;
-        } else if (isFeriado) {
-            tr.style.backgroundColor = '#f3e5f5'; // Violeta muy claro para feriado OK
-        }
-
-        const iconFeriado = isFeriado ? `<span title="Feriado: ${nombreFeriado}" style="cursor:help; margin-left:5px;">🎉</span>` : '';
-
-        tr.innerHTML = `
-            <td style="padding: 12px; border-bottom: 1px solid #eee; border-right: 1px solid #ddd; white-space: nowrap;" title="${nombreFeriado || ''}">
-                ${fechaLimpia} ${iconFeriado}
-            </td>
-            ${actHTML}
-            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">
-                ${formatComparedInput(r.horas_50_auto, r.horas_50_manager, 'horas_50_manager')}
-            </td>
-            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">
-                ${formatComparedInput(r.horas_100_auto, r.horas_100_manager, 'horas_100_manager')}
-            </td>
-            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee; border-right: 1px solid #ddd;">
-                ${formatComparedInput(r.horas_feriado_auto, r.horas_feriado_manager, 'horas_feriado_manager')}
-            </td>
-            <td style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">
-                ${formatText(r.comentarios, 'comentarios')}
-                ${msgFilas}
-            </td>
+        weekBlock.innerHTML = `
+            <div class="bg-slate-50/50 px-6 py-3 border-bottom border-slate-100 flex justify-between items-center sticky top-0 z-10 backdrop-blur-sm">
+                <h3 class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wider">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    Semana ${weekData.weekNo} <span class="text-slate-400 font-normal ml-2">(${firstDay} — ${lastDay})</span>
+                </h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm border-separate border-spacing-0">
+                    <thead>
+                        <tr class="bg-slate-50/30">
+                            <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Día / Fecha</th>
+                            <th class="px-4 py-2 text-center text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Entrada</th>
+                            <th class="px-4 py-2 text-center text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100 border-r border-slate-100">Salida</th>
+                            <th class="px-4 py-2 text-center text-[10px] font-bold text-blue-400 uppercase border-b border-slate-100 bg-blue-50/30">50%</th>
+                            <th class="px-4 py-2 text-center text-[10px] font-bold text-blue-400 uppercase border-b border-slate-100 bg-blue-50/30">100%</th>
+                            <th class="px-4 py-2 text-center text-[10px] font-bold text-blue-400 uppercase border-b border-slate-100 border-r border-slate-100 bg-blue-50/30">Feriado</th>
+                            <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Feedback Manager</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50" id="tbody-${weekKey}"></tbody>
+                </table>
+            </div>
         `;
-        tbody.appendChild(tr);
+        
+        const weekTbody = weekBlock.querySelector(`#tbody-${weekKey}`);
+        
+        weekData.registros.forEach(r => {
+            const tr = document.createElement('tr');
+            
+            // Lógica de fecha y feriado
+            const temp = new Date(r.fecha + 'T12:00:00');
+            const diaInt = temp.getDay();
+            const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            const isWeekend = diaInt === 0 || diaInt === 6;
+            const nombreFeriado = getDetalleFeriado(r.fecha);
+            const isFeriado = nombreFeriado !== null;
+
+            const actIngreso = r.hora_ingreso && r.hora_ingreso !== 0 ? convertirHoraDecimal(r.hora_ingreso) : null;
+            const actSalida = r.hora_salida && r.hora_salida !== 0 ? convertirHoraDecimal(r.hora_salida) : null;
+            const isNoActivity = !actIngreso && !actSalida;
+
+            // Validaciones
+            const diff50 = Number(r.horas_50_auto || 0) !== Number(r.horas_50_manager || 0);
+            const diff100 = Number(r.horas_100_auto || 0) !== Number(r.horas_100_manager || 0);
+            const diffFer = Number(r.horas_feriado_auto || 0) !== Number(r.horas_feriado_manager || 0);
+            const hasDiff = diff50 || diff100 || diffFer;
+            
+            let rowLevel = 'ok';
+            if (hasDiff || (diaInt === 0 && Number(r.horas_50_manager || 0) > 0)) {
+                rowLevel = 'error';
+                __empRowErrors++;
+            } else if ((isNoActivity && !r.ausencias && !isWeekend) || (isFeriado && Number(r.horas_feriado_manager || 0) === 0 && !isNoActivity)) {
+                rowLevel = 'warning';
+                __empRowWarnings++;
+            }
+
+            const rowClass = rowLevel === 'error' ? 'bg-red-50/50' : rowLevel === 'warning' ? 'bg-amber-50/50' : 'hover:bg-slate-50/50 transition-colors';
+
+            const notionInput = (val, fieldId, type = 'number') => {
+                const disabled = isDisabled ? 'disabled' : '';
+                return `<input type="${type}" step="0.5" class="edit-input w-full bg-slate-100/50 border-none rounded px-2 py-1 text-center font-bold text-blue-700 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all ${disabled}" 
+                        data-id="${r.id}" data-field="${fieldId}" value="${val || 0}">`;
+            };
+
+            const systemBadge = (val) => `<span class="text-[10px] font-bold text-slate-400 block mb-1">${val || 0}</span>`;
+
+            tr.className = rowClass;
+            tr.innerHTML = `
+                <td class="px-4 py-3 align-top">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-700">${dias[diaInt]}</span>
+                        <span class="text-[10px] text-slate-400 font-medium">${r.fecha.split('-').reverse().join('/')}</span>
+                        ${isFeriado ? `<span class="mt-1 text-[9px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full font-bold uppercase w-fit">🎉 ${nombreFeriado}</span>` : ''}
+                    </div>
+                </td>
+                <td class="px-4 py-3 text-center text-slate-500 align-middle">${actIngreso || '-'}</td>
+                <td class="px-4 py-3 text-center text-slate-500 align-middle border-r border-slate-50">${actSalida || '-'}</td>
+                <td class="px-4 py-3 text-center bg-blue-50/20 align-middle">
+                    ${systemBadge(r.horas_50_auto)} ${notionInput(r.horas_50_manager, 'horas_50_manager')}
+                </td>
+                <td class="px-4 py-3 text-center bg-blue-50/20 align-middle">
+                    ${systemBadge(r.horas_100_auto)} ${notionInput(r.horas_100_manager, 'horas_100_manager')}
+                </td>
+                <td class="px-4 py-3 text-center bg-blue-50/20 align-middle border-r border-slate-50">
+                    ${systemBadge(r.horas_feriado_auto)} ${notionInput(r.horas_feriado_manager, 'horas_feriado_manager')}
+                </td>
+                <td class="px-4 py-3 align-top">
+                    <input type="text" class="edit-input w-full bg-transparent border-none text-xs text-slate-600 focus:bg-white focus:ring-1 focus:ring-slate-200 p-1 rounded ${isDisabled ? 'disabled' : ''}" 
+                           data-id="${r.id}" data-field="comentarios" placeholder="Agregar comentario..." value="${r.comentarios || ''}">
+                    ${rowLevel === 'error' ? '<p class="text-[10px] text-red-500 font-bold mt-1 uppercase">⚠ Error de cálculo</p>' : 
+                      rowLevel === 'warning' ? '<p class="text-[10px] text-amber-600 font-bold mt-1 uppercase">⚠ Requiere revisión</p>' : ''}
+                </td>
+            `;
+            weekTbody.appendChild(tr);
+        });
+
+        listContainer.appendChild(weekBlock);
     });
 
-    // 5. Actualizar los contadores superiores y lógica del botón Aprobar
+    const oldSecciones = document.getElementById('emp-semanas-container-old'); // Cleanup si existiera 
+    // container.insertBefore(listContainer, document.getElementById('emp-actions')); // Ya no es necesario
+
+    // Actualizar contadores
     const counterBadge = document.getElementById('empleado-status-counters');
     if (counterBadge) {
-        if (__empRowErrors === 0 && __empRowWarnings === 0) {
-            counterBadge.style.display = 'none';
-        } else {
-            counterBadge.style.display = 'inline-block';
-            let str = [];
-            
-            if (__empRowErrors > 0) {
-                str.push(`🔴 ${__empRowErrors} error${__empRowErrors>1?'es':''}`);
-                str.push(`❌ Existen errores que deben resolverse antes de aprobar`);
-            } else if (__empRowWarnings > 0) {
-                str.push(`🟡 ${__empRowWarnings} para revisar`);
-                str.push(`⚠️ Hay días que requieren revisión`);
-            }
-            
-            counterBadge.innerHTML = str.join(' | ');
-        }
+        counterBadge.innerHTML = `
+            <span class="inline-flex items-center gap-1.5 bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-red-100 ${__empRowErrors === 0 ? 'hidden' : ''}">
+                <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span> ${__empRowErrors} Error${__empRowErrors>1?'es':''}
+            </span>
+            <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-amber-100 ${__empRowWarnings === 0 ? 'hidden' : ''}">
+                <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span> ${__empRowWarnings} Advertencia${__empRowWarnings>1?'s':''}
+            </span>
+        `;
     }
 
     if (btnAprobar && !isDisabled) {
         if (__empRowErrors > 0) {
             btnAprobar.disabled = true;
-            btnAprobar.innerText = "❌ Resolver errores para aprobar";
-            btnAprobar.style.opacity = '0.6';
-            btnAprobar.style.cursor = 'not-allowed';
-            btnAprobar.dataset.warnings = 'false';
+            btnAprobar.className = "bg-slate-200 text-slate-400 px-5 py-2.5 rounded-lg font-bold cursor-not-allowed flex items-center gap-2";
+            btnAprobar.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> Resolver errores para aprobar`;
         } else {
             btnAprobar.disabled = false;
-            btnAprobar.innerText = "✅ Aprobar Empleado";
-            btnAprobar.style.opacity = '1';
-            btnAprobar.style.cursor = 'pointer';
-            btnAprobar.dataset.warnings = __empRowWarnings > 0 ? 'true' : 'false';
+            btnAprobar.className = "bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-sm transition-all duration-150 ease-in-out flex items-center gap-2";
+            btnAprobar.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Aprobar Reporte`;
         }
     }
 }

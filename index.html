@@ -6,8 +6,24 @@
     <title>App Horas Extras - Dashboard</title>
     <link rel="stylesheet" href="css/styles.css">
     
-    <!-- Tailwind CSS -->
+    <!-- Typography: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS with Inter Config -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+            },
+          }
+        }
+      }
+    </script>
 
     <!-- SheetJS (para exportación y carga) -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -114,20 +130,10 @@
                 Ocurrió un error al conectar con la base de datos.
             </div>
 
-            <!-- Tabla de Registros -->
-            <table class="corporate-table" id="registros-table" style="display: none;">
-                <thead>
-                    <tr>
-                        <th style="text-align: left;">Empleado</th>
-                        <th class="text-center">Días Rep.</th>
-                        <th class="text-center">Total Extras</th>
-                        <th class="text-center">Estado General</th>
-                        <th class="text-center">Acción</th>
-                    </tr>
-                </thead>
-                <tbody id="registros-tbody">
-                </tbody>
-            </table>
+            <!-- Lista de Empleados (SaaS Cards) -->
+            <div id="registros-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style="display: none;">
+                <!-- Las cards se inyectan dinámicamente aquí -->
+            </div>
         </div>
     </main>
 </body>
