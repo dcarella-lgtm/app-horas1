@@ -176,33 +176,36 @@ export function renderRegistros(registros) {
         let alertasHTML = '';
         const alertas = [];
 
-        // 1. Errores críticos (🔴): Empleados con inconsistencias
+        // 1. Errores críticos (🔴) - Máxima prioridad
         const cantErrores = registros.filter(r => r.estado === 'rechazado').length;
         if (cantErrores > 0) {
             alertas.push({
+                type: 'error',
                 color: 'red',
                 icono: '🔴',
-                texto: `${cantErrores} empleado(s) con inconsistencias`
+                texto: `${cantErrores} empleado(s) con inconsistencias críticas — requiere revisión inmediata`
             });
         }
 
-        // 2. Advertencias (🟡): Empleados sin fichada / pendientes de revisión
+        // 2. Advertencias (🟡) - Prioridad media
         const cantWarnings = registros.filter(r => r.estado === 'pendiente' || r.estado === 'revision').length;
         if (cantWarnings > 0) {
             alertas.push({
+                type: 'warning',
                 color: 'yellow',
                 icono: '🟡',
-                texto: `${cantWarnings} empleado(s) con revisión pendiente o sin fichada`
+                texto: `${cantWarnings} empleado(s) pendientes de revisión o con datos incompletos`
             });
         }
 
-        // 3. Casos especiales (🔴): Extras especiales (domingos/100% o feriados)
-        const cantEspeciales = registros.filter(r => Number(r.total_100) > 0 || Number(r.total_feriado) > 0).length;
-        if (cantEspeciales > 0) {
+        // 3. Informativos (ℹ️) - Baja prioridad (opcional, p. ej. todos listos)
+        const cantAprobados = registros.filter(r => r.estado === 'aprobado').length;
+        if (cantAprobados > 0 && cantErrores === 0 && cantWarnings === 0) {
             alertas.push({
-                color: 'red',
-                icono: '🔴',
-                texto: `${cantEspeciales} empleado(s) con horas al 100% (o feriado)`
+                type: 'info',
+                color: 'blue',
+                icono: 'ℹ️',
+                texto: `${cantAprobados} empleado(s) aprobados — listos para exportar la liquidación`
             });
         }
 
@@ -217,14 +220,29 @@ export function renderRegistros(registros) {
                 <div class="flex flex-col gap-2">
             `;
             
+            // Renderizadas en el orden del array (Errores -> Advertencias -> Informativas)
             alertas.forEach(alerta => {
-                const bgClass = alerta.color === 'red' ? 'bg-red-50/50 border border-red-100 hover:bg-red-50' : 'bg-amber-50/50 border border-amber-100 hover:bg-amber-50';
-                const textClass = alerta.color === 'red' ? 'text-red-700' : 'text-amber-700';
+                let bgClass = '';
+                let textClass = '';
+                
+                if (alerta.color === 'red') {
+                    bgClass = 'bg-red-50 hover:bg-red-100 border border-red-100';
+                    textClass = 'text-red-700';
+                } else if (alerta.color === 'yellow') {
+                    bgClass = 'bg-amber-50 hover:bg-amber-100 border border-amber-100';
+                    textClass = 'text-amber-700';
+                } else if (alerta.color === 'blue') {
+                    bgClass = 'bg-blue-50 hover:bg-blue-100 border border-blue-100';
+                    textClass = 'text-blue-700';
+                }
                 
                 alertasHTML += `
-                    <div class="flex items-center gap-3 p-3 rounded-lg ${bgClass} cursor-pointer transition-colors shadow-sm">
-                        <span class="text-sm">${alerta.icono}</span>
+                    <div data-type="${alerta.type}" class="flex items-center gap-3 p-3 rounded-lg ${bgClass} cursor-pointer transition-colors shadow-sm">
+                        <span class="text-lg leading-none">${alerta.icono}</span>
                         <span class="font-semibold text-sm ${textClass}">${alerta.texto}</span>
+                        <span class="ml-auto text-slate-400 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </span>
                     </div>
                 `;
             });
