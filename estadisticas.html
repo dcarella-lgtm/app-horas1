@@ -106,9 +106,30 @@
             </div>
         </div>
 
-        <!-- Contador de empleados -->
-        <div id="empleados-count" class="mb-4 hidden">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50 px-3 py-1.5 rounded-full"></span>
+        <!-- Filtros Supervisor / Equipo -->
+        <div id="filtros-equipo" class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm mb-6 flex flex-wrap items-center gap-4" style="display: none;">
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Filtrar por</span>
+            </div>
+
+            <div class="flex flex-col gap-0.5">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Supervisor</label>
+                <select id="filtro-supervisor" class="px-3 py-1.5 rounded-lg bg-slate-50 border-none text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-0.5">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Equipo</label>
+                <select id="filtro-equipo" class="px-3 py-1.5 rounded-lg bg-slate-50 border-none text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+
+            <div class="ml-auto">
+                <span id="empleados-count" class="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50 px-3 py-1.5 rounded-full"></span>
+            </div>
         </div>
 
         <!-- Loading -->

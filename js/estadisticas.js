@@ -2,6 +2,11 @@ import { obtenerRegistros, obtenerConfigRRHH } from "./api.js";
 import { inicializarConfiguracion, analizarTipoEvento, getConfigRRHH } from "./config.js";
 import { cargarAsignaciones } from "./asignaciones.js";
 
+// Cache de datos para filtrar sin re-fetch
+let _empleadosCache = [];
+let _configCache = null;
+let _asignacionesCache = {};
+
 document.addEventListener("DOMContentLoaded", async () => {
     await inicializarConfiguracion();
     init();
@@ -19,10 +24,17 @@ async function init() {
 
     btn.addEventListener("click", () => renderStats());
 
+    // Filtros de supervisor/equipo — re-render sin re-fetch
+    const filtroSup = document.getElementById("filtro-supervisor");
+    const filtroEq = document.getElementById("filtro-equipo");
+    if (filtroSup) filtroSup.addEventListener("change", () => renderTabla());
+    if (filtroEq) filtroEq.addEventListener("change", () => renderTabla());
+
     // Cargar estadísticas iniciales
     renderStats();
 }
 
+// ── Fetch + procesamiento ──────────────────────────────────
 async function renderStats() {
     const mes = parseInt(document.getElementById("select-mes").value);
     const anio = parseInt(document.getElementById("select-anio").value);
@@ -30,12 +42,12 @@ async function renderStats() {
     const loading = document.getElementById("stats-loading");
     const table = document.getElementById("stats-table");
     const empty = document.getElementById("stats-empty");
-    const tbody = document.getElementById("stats-tbody");
+    const filtrosBar = document.getElementById("filtros-equipo");
 
     loading.style.display = "block";
     table.style.display = "none";
     empty.style.display = "none";
-    tbody.innerHTML = "";
+    if (filtrosBar) filtrosBar.style.display = "none";
 
     // Calcular rango de fechas
     const fechaDesde = `${anio}-${String(mes + 1).padStart(2, '0')}-01`;
@@ -43,64 +55,146 @@ async function renderStats() {
     const fechaHasta = `${anio}-${String(mes + 1).padStart(2, '0')}-${ultimoDia}`;
 
     const res = await obtenerRegistros({ fechaDesde, fechaHasta });
-    const config = getConfigRRHH();
+    _configCache = getConfigRRHH();
+    _asignacionesCache = cargarAsignaciones();
 
     loading.style.display = "none";
 
     if (res.ok && res.data.length > 0) {
         const stats = procesarDatos(res.data);
         renderMetrics(stats);
-        
-        const empleadosList = Object.values(stats.empleados);
-        
-        // Contador
-        const countEl = document.getElementById("empleados-count");
-        if (countEl) {
-            countEl.classList.remove("hidden");
-            countEl.querySelector("span").textContent = `${empleadosList.length} empleado${empleadosList.length !== 1 ? 's' : ''}`;
-        }
+        _empleadosCache = Object.values(stats.empleados);
 
-        // Cargar asignaciones de supervisores/equipos
-        const asignaciones = cargarAsignaciones();
+        // Poblar filtros con valores únicos
+        poblarFiltros();
 
-        table.style.display = "table";
-        empleadosList.forEach(emp => {
-            const tr = document.createElement("tr");
-            tr.className = "hover:bg-slate-50 transition-colors cursor-pointer";
-            tr.onclick = () => window.location.href = `empleado.html?legajo=${emp.legajo}`;
+        // Mostrar barra de filtros
+        if (filtrosBar) filtrosBar.style.display = "flex";
 
-            const excedeH50 = emp.h50 > config.limite_mensual_50;
-            const excedeH100 = emp.h100 > config.limite_mensual_100;
-            const totalHoras = (emp.h50 + emp.h100).toFixed(1);
-
-            const badgeHTML = (excedeH50 || excedeH100) 
-                ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-50 text-red-700">Excedido</span>'
-                : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-green-50 text-green-700">OK</span>';
-
-            // Asignación de supervisor/equipo
-            const asig = asignaciones[String(emp.legajo)];
-            const supervisor = asig ? asig.supervisor : '-';
-            const equipo = asig ? asig.equipo : '-';
-
-            tr.innerHTML = `
-                <td class="px-6 py-4"><span class="font-semibold text-slate-800">${emp.nombre}</span></td>
-                <td class="px-6 py-4"><span class="text-xs text-slate-400 font-medium">${emp.legajo}</span></td>
-                <td class="px-6 py-4"><span class="text-sm text-slate-600">${supervisor}</span></td>
-                <td class="px-6 py-4"><span class="text-xs font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded">${equipo}</span></td>
-                <td class="px-6 py-4 text-center">${badgeHTML}</td>
-                <td class="px-6 py-4 text-center font-semibold text-slate-700">${totalHoras} hs</td>
-                <td class="px-6 py-4 text-right">
-                    <span class="text-blue-600 text-xs font-semibold hover:text-blue-800">Ver detalle →</span>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
+        // Render inicial de la tabla
+        renderTabla();
     } else {
+        _empleadosCache = [];
         empty.style.display = "block";
         resetMetrics();
     }
 }
 
+// ── Poblar dropdowns de filtro ─────────────────────────────
+function poblarFiltros() {
+    const selectSup = document.getElementById("filtro-supervisor");
+    const selectEq = document.getElementById("filtro-equipo");
+    if (!selectSup || !selectEq) return;
+
+    // Recolectar valores únicos desde asignaciones
+    const supervisores = new Set();
+    const equipos = new Set();
+
+    Object.values(_asignacionesCache).forEach(a => {
+        if (a.supervisor) supervisores.add(a.supervisor);
+        if (a.equipo) equipos.add(a.equipo);
+    });
+
+    // Guardar selección actual
+    const prevSup = selectSup.value;
+    const prevEq = selectEq.value;
+
+    // Rebuild options
+    selectSup.innerHTML = '<option value="">Todos</option>';
+    [...supervisores].sort().forEach(s => {
+        selectSup.innerHTML += `<option value="${s}">${s}</option>`;
+    });
+
+    selectEq.innerHTML = '<option value="">Todos</option>';
+    [...equipos].sort().forEach(e => {
+        selectEq.innerHTML += `<option value="${e}">${e}</option>`;
+    });
+
+    // Restaurar selección si sigue existiendo
+    selectSup.value = prevSup || "";
+    selectEq.value = prevEq || "";
+}
+
+// ── Render de tabla con filtros aplicados ───────────────────
+function renderTabla() {
+    const table = document.getElementById("stats-table");
+    const empty = document.getElementById("stats-empty");
+    const tbody = document.getElementById("stats-tbody");
+    const countEl = document.getElementById("empleados-count");
+
+    tbody.innerHTML = "";
+
+    const filtroSup = (document.getElementById("filtro-supervisor") || {}).value || "";
+    const filtroEq = (document.getElementById("filtro-equipo") || {}).value || "";
+
+    // Filtrar
+    const filtrados = _empleadosCache.filter(emp => {
+        const asig = _asignacionesCache[String(emp.legajo)];
+        const supervisor = asig ? asig.supervisor : "";
+        const equipo = asig ? asig.equipo : "";
+
+        if (filtroSup && supervisor !== filtroSup) return false;
+        if (filtroEq && equipo !== filtroEq) return false;
+        return true;
+    });
+
+    // Actualizar contador
+    if (countEl) {
+        countEl.textContent = `${filtrados.length} de ${_empleadosCache.length} empleados`;
+    }
+
+    if (filtrados.length === 0) {
+        table.style.display = "none";
+        empty.style.display = "block";
+        // Mensaje contextual
+        const emptyTitle = empty.querySelector("h3");
+        const emptyDesc = empty.querySelector("p");
+        if (filtroSup || filtroEq) {
+            if (emptyTitle) emptyTitle.textContent = "Sin empleados para este filtro";
+            if (emptyDesc) emptyDesc.textContent = "Probá cambiando el supervisor o equipo seleccionado.";
+        } else {
+            if (emptyTitle) emptyTitle.textContent = "Sin empleados cargados";
+            if (emptyDesc) emptyDesc.textContent = "Subí un archivo Excel para ver el listado del equipo.";
+        }
+        return;
+    }
+
+    table.style.display = "table";
+    empty.style.display = "none";
+
+    filtrados.forEach(emp => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition-colors cursor-pointer";
+        tr.onclick = () => window.location.href = `empleado.html?legajo=${emp.legajo}`;
+
+        const excedeH50 = emp.h50 > _configCache.limite_mensual_50;
+        const excedeH100 = emp.h100 > _configCache.limite_mensual_100;
+        const totalHoras = (emp.h50 + emp.h100).toFixed(1);
+
+        const badgeHTML = (excedeH50 || excedeH100)
+            ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-50 text-red-700">Excedido</span>'
+            : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-green-50 text-green-700">OK</span>';
+
+        const asig = _asignacionesCache[String(emp.legajo)];
+        const supervisor = asig ? asig.supervisor : '-';
+        const equipo = asig ? asig.equipo : '-';
+
+        tr.innerHTML = `
+            <td class="px-6 py-4"><span class="font-semibold text-slate-800">${emp.nombre}</span></td>
+            <td class="px-6 py-4"><span class="text-xs text-slate-400 font-medium">${emp.legajo}</span></td>
+            <td class="px-6 py-4"><span class="text-sm text-slate-600">${supervisor}</span></td>
+            <td class="px-6 py-4"><span class="text-xs font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded">${equipo}</span></td>
+            <td class="px-6 py-4 text-center">${badgeHTML}</td>
+            <td class="px-6 py-4 text-center font-semibold text-slate-700">${totalHoras} hs</td>
+            <td class="px-6 py-4 text-right">
+                <span class="text-blue-600 text-xs font-semibold hover:text-blue-800">Ver detalle →</span>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// ── Procesamiento de datos ─────────────────────────────────
 function procesarDatos(data) {
     const result = {
         totalAusencias: 0,
