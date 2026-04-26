@@ -6,9 +6,30 @@
 
 const STORAGE_KEY = "asignaciones";
 
-// Listas maestras de supervisores y equipos disponibles
-export const SUPERVISORES = ["Juan", "María", "Pedro"];
-export const EQUIPOS = ["Líquidos", "Sólidos", "Envasado"];
+// Funciones para manejar listas maestras
+export function cargarListaSupervisores() {
+    const raw = localStorage.getItem("lista_supervisores");
+    if (raw) return JSON.parse(raw);
+    const def = ["Juan", "María"];
+    guardarListaSupervisores(def);
+    return def;
+}
+
+export function guardarListaSupervisores(lista) {
+    localStorage.setItem("lista_supervisores", JSON.stringify(lista));
+}
+
+export function cargarListaEquipos() {
+    const raw = localStorage.getItem("lista_equipos");
+    if (raw) return JSON.parse(raw);
+    const def = ["Líquidos", "Sólidos"];
+    guardarListaEquipos(def);
+    return def;
+}
+
+export function guardarListaEquipos(lista) {
+    localStorage.setItem("lista_equipos", JSON.stringify(lista));
+}
 
 // Datos iniciales de ejemplo (se usan solo si no hay nada en localStorage)
 const DEFAULTS = {

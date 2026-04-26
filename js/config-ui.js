@@ -1,5 +1,6 @@
 import { obtenerFeriadosDB, agregarFeriadoDB, eliminarFeriadoDB, obtenerConfigRRHH, guardarConfigRRHH } from "./api.js";
 import { FERIADOS, cargarFeriados, getConfigRRHH, inicializarConfiguracion, getDetalleFeriado } from "./config.js";
+import { cargarListaSupervisores, guardarListaSupervisores, cargarListaEquipos, guardarListaEquipos } from "./asignaciones.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     console.log("[Config-UI] DOM cargado, inicializando...");
@@ -13,6 +14,10 @@ async function init() {
 
         // 2. Cargar datos dinámicos
         await refreshFeriadosList();
+
+        // 3. Inicializar UI de Supervisores y Equipos
+        initSupervisoresUI();
+        initEquiposUI();
         
         console.log("[Config-UI] Inicialización completada.");
     } catch (err) {
@@ -217,5 +222,127 @@ function renderStaticFeriados() {
             await refreshFeriadosList(); // Refrescar UI dinámica
             renderStaticFeriados(); // Refrescar UI estática local
         };
+    });
+}
+
+// ── Gestión de Supervisores ────────────────────────────────
+function initSupervisoresUI() {
+    const form = document.getElementById("form-supervisor");
+    if (!form) return;
+
+    renderListaSupervisores();
+
+    form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const input = document.getElementById("input-supervisor");
+        const nombre = input.value.trim();
+        if (!nombre) return;
+
+        const lista = cargarListaSupervisores();
+        if (!lista.includes(nombre)) {
+            lista.push(nombre);
+            lista.sort();
+            guardarListaSupervisores(lista);
+            renderListaSupervisores();
+        }
+        input.value = "";
+    });
+}
+
+function renderListaSupervisores() {
+    const ul = document.getElementById("lista-supervisores");
+    if (!ul) return;
+
+    const lista = cargarListaSupervisores();
+    ul.innerHTML = "";
+
+    if (lista.length === 0) {
+        ul.innerHTML = '<li class="p-4 text-sm text-gray-500 text-center">No hay supervisores cargados.</li>';
+        return;
+    }
+
+    lista.forEach(sup => {
+        const li = document.createElement("li");
+        li.className = "flex justify-between items-center p-4 hover:bg-gray-100 transition-colors";
+        li.innerHTML = `
+            <span class="font-medium text-gray-700">${sup}</span>
+            <button class="btn-del-sup text-red-500 hover:text-red-700 p-1" data-nombre="${sup}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+        `;
+        ul.appendChild(li);
+    });
+
+    ul.querySelectorAll(".btn-del-sup").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const nombre = btn.dataset.nombre;
+            if (confirm(`¿Eliminar al supervisor "${nombre}"?`)) {
+                let lista = cargarListaSupervisores();
+                lista = lista.filter(s => s !== nombre);
+                guardarListaSupervisores(lista);
+                renderListaSupervisores();
+            }
+        });
+    });
+}
+
+// ── Gestión de Equipos ─────────────────────────────────────
+function initEquiposUI() {
+    const form = document.getElementById("form-equipo");
+    if (!form) return;
+
+    renderListaEquipos();
+
+    form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const input = document.getElementById("input-equipo");
+        const nombre = input.value.trim();
+        if (!nombre) return;
+
+        const lista = cargarListaEquipos();
+        if (!lista.includes(nombre)) {
+            lista.push(nombre);
+            lista.sort();
+            guardarListaEquipos(lista);
+            renderListaEquipos();
+        }
+        input.value = "";
+    });
+}
+
+function renderListaEquipos() {
+    const ul = document.getElementById("lista-equipos");
+    if (!ul) return;
+
+    const lista = cargarListaEquipos();
+    ul.innerHTML = "";
+
+    if (lista.length === 0) {
+        ul.innerHTML = '<li class="p-4 text-sm text-gray-500 text-center">No hay equipos cargados.</li>';
+        return;
+    }
+
+    lista.forEach(eq => {
+        const li = document.createElement("li");
+        li.className = "flex justify-between items-center p-4 hover:bg-gray-100 transition-colors";
+        li.innerHTML = `
+            <span class="font-medium text-gray-700">${eq}</span>
+            <button class="btn-del-eq text-red-500 hover:text-red-700 p-1" data-nombre="${eq}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+        `;
+        ul.appendChild(li);
+    });
+
+    ul.querySelectorAll(".btn-del-eq").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const nombre = btn.dataset.nombre;
+            if (confirm(`¿Eliminar el equipo "${nombre}"?`)) {
+                let lista = cargarListaEquipos();
+                lista = lista.filter(e => e !== nombre);
+                guardarListaEquipos(lista);
+                renderListaEquipos();
+            }
+        });
     });
 }

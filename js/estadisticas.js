@@ -1,6 +1,6 @@
 import { obtenerRegistros, obtenerConfigRRHH } from "./api.js";
 import { inicializarConfiguracion, analizarTipoEvento, getConfigRRHH } from "./config.js";
-import { cargarAsignaciones, actualizarAsignacion, SUPERVISORES, EQUIPOS } from "./asignaciones.js";
+import { cargarAsignaciones, actualizarAsignacion, cargarListaSupervisores, cargarListaEquipos } from "./asignaciones.js";
 
 // Cache de datos para filtrar sin re-fetch
 let _empleadosCache = [];
@@ -279,13 +279,15 @@ function renderTabla() {
         const eqActual = asig ? asig.equipo : '';
 
         // Generar options para supervisor
+        const listaSup = cargarListaSupervisores();
         const supOptions = ['<option value="">-</option>']
-            .concat(SUPERVISORES.map(s => `<option value="${s}"${s === supActual ? ' selected' : ''}>${s}</option>`))
+            .concat(listaSup.map(s => `<option value="${s}"${s === supActual ? ' selected' : ''}>${s}</option>`))
             .join('');
 
         // Generar options para equipo
+        const listaEq = cargarListaEquipos();
         const eqOptions = ['<option value="">-</option>']
-            .concat(EQUIPOS.map(e => `<option value="${e}"${e === eqActual ? ' selected' : ''}>${e}</option>`))
+            .concat(listaEq.map(e => `<option value="${e}"${e === eqActual ? ' selected' : ''}>${e}</option>`))
             .join('');
 
         tr.innerHTML = `

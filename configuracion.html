@@ -169,6 +169,47 @@
                 </section>
             </div>
         </div>
+
+        <!-- Nueva Fila: Supervisores y Equipos -->
+        <div class="grid grid-cols-2 gap-8 items-start mt-8">
+            <!-- Gestión de Supervisores -->
+            <section class="config-section bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="mt-0 mb-6 text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    Gestión de Supervisores
+                </h3>
+                
+                <form id="form-supervisor" class="flex gap-2 mb-6">
+                    <input type="text" id="input-supervisor" placeholder="Nombre del supervisor..." required class="flex-1 p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-lg font-bold shadow-sm transition-all duration-150 ease-in-out">Agregar</button>
+                </form>
+
+                <div class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                    <ul id="lista-supervisores" class="divide-y divide-gray-200">
+                        <!-- Inyectado por JS -->
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Gestión de Equipos -->
+            <section class="config-section bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="mt-0 mb-6 text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    Gestión de Equipos
+                </h3>
+                
+                <form id="form-equipo" class="flex gap-2 mb-6">
+                    <input type="text" id="input-equipo" placeholder="Nombre del equipo..." required class="flex-1 p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-teal-500 transition-all">
+                    <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-3 rounded-lg font-bold shadow-sm transition-all duration-150 ease-in-out">Agregar</button>
+                </form>
+
+                <div class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                    <ul id="lista-equipos" class="divide-y divide-gray-200">
+                        <!-- Inyectado por JS -->
+                    </ul>
+                </div>
+            </section>
+        </div>
     </main>
 </body>
 </html>
