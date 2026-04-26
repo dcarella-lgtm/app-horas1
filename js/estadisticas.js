@@ -7,6 +7,22 @@ let _empleadosCache = [];
 let _configCache = null;
 let _asignacionesCache = {};
 
+// ── Supervisor mode ────────────────────────────────────────
+const SUPERVISOR_KEY = "supervisorActivo";
+
+function getSupervisorActivo() {
+    return localStorage.getItem(SUPERVISOR_KEY) || "";
+}
+
+function setSupervisorActivo(valor) {
+    if (valor) {
+        localStorage.setItem(SUPERVISOR_KEY, valor);
+    } else {
+        localStorage.removeItem(SUPERVISOR_KEY);
+    }
+}
+
+// ── Init ───────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
     await inicializarConfiguracion();
     init();
@@ -29,6 +45,28 @@ async function init() {
     const filtroEq = document.getElementById("filtro-equipo");
     if (filtroSup) filtroSup.addEventListener("change", () => renderTabla());
     if (filtroEq) filtroEq.addEventListener("change", () => renderTabla());
+
+    // Selector de modo supervisor
+    const selectorSup = document.getElementById("selector-supervisor-activo");
+    if (selectorSup) {
+        selectorSup.addEventListener("change", (e) => {
+            setSupervisorActivo(e.target.value);
+            aplicarModoSupervisor();
+            renderTabla();
+        });
+    }
+
+    // Botón salir de vista supervisor
+    const btnSalir = document.getElementById("btn-salir-supervisor");
+    if (btnSalir) {
+        btnSalir.addEventListener("click", () => {
+            setSupervisorActivo("");
+            const sel = document.getElementById("selector-supervisor-activo");
+            if (sel) sel.value = "";
+            aplicarModoSupervisor();
+            renderTabla();
+        });
+    }
 
     // Cargar estadísticas iniciales
     renderStats();
@@ -65,8 +103,12 @@ async function renderStats() {
         renderMetrics(stats);
         _empleadosCache = Object.values(stats.empleados);
 
-        // Poblar filtros con valores únicos
+        // Poblar filtros y selector de supervisor
         poblarFiltros();
+        poblarSelectorSupervisor();
+
+        // Restaurar modo supervisor desde localStorage
+        aplicarModoSupervisor();
 
         // Mostrar barra de filtros
         if (filtrosBar) filtrosBar.style.display = "flex";
@@ -86,7 +128,6 @@ function poblarFiltros() {
     const selectEq = document.getElementById("filtro-equipo");
     if (!selectSup || !selectEq) return;
 
-    // Recolectar valores únicos desde asignaciones
     const supervisores = new Set();
     const equipos = new Set();
 
@@ -95,11 +136,9 @@ function poblarFiltros() {
         if (a.equipo) equipos.add(a.equipo);
     });
 
-    // Guardar selección actual
     const prevSup = selectSup.value;
     const prevEq = selectEq.value;
 
-    // Rebuild options
     selectSup.innerHTML = '<option value="">Todos</option>';
     [...supervisores].sort().forEach(s => {
         selectSup.innerHTML += `<option value="${s}">${s}</option>`;
@@ -110,9 +149,65 @@ function poblarFiltros() {
         selectEq.innerHTML += `<option value="${e}">${e}</option>`;
     });
 
-    // Restaurar selección si sigue existiendo
     selectSup.value = prevSup || "";
     selectEq.value = prevEq || "";
+}
+
+// ── Poblar selector de modo supervisor ─────────────────────
+function poblarSelectorSupervisor() {
+    const selector = document.getElementById("selector-supervisor-activo");
+    if (!selector) return;
+
+    const supervisores = new Set();
+    Object.values(_asignacionesCache).forEach(a => {
+        if (a.supervisor) supervisores.add(a.supervisor);
+    });
+
+    const prev = getSupervisorActivo();
+
+    selector.innerHTML = '<option value="">Modo general</option>';
+    [...supervisores].sort().forEach(s => {
+        selector.innerHTML += `<option value="${s}">${s}</option>`;
+    });
+
+    // Restaurar selección persistida
+    if (prev && supervisores.has(prev)) {
+        selector.value = prev;
+    }
+}
+
+// ── Aplicar modo supervisor (UI adaptativa) ────────────────
+function aplicarModoSupervisor() {
+    const supActivo = getSupervisorActivo();
+    const titulo = document.getElementById("page-title");
+    const subtitulo = document.getElementById("page-subtitle");
+    const btnSalir = document.getElementById("btn-salir-supervisor");
+    const filtroSupSelect = document.getElementById("filtro-supervisor");
+    const filtroSupContainer = filtroSupSelect ? filtroSupSelect.closest(".flex.flex-col") : null;
+
+    if (supActivo) {
+        // Modo supervisor activo
+        if (titulo) titulo.textContent = `Equipo de ${supActivo}`;
+        if (subtitulo) subtitulo.textContent = "Vista de supervisor — revisión operativa";
+        if (btnSalir) btnSalir.style.display = "flex";
+
+        // Ocultar filtro manual de supervisor (ya está forzado)
+        if (filtroSupContainer) filtroSupContainer.style.display = "none";
+
+        // Forzar el filtro de supervisor al valor activo
+        if (filtroSupSelect) filtroSupSelect.value = supActivo;
+    } else {
+        // Modo general
+        if (titulo) titulo.textContent = "Empleados";
+        if (subtitulo) subtitulo.textContent = "Listado general del equipo";
+        if (btnSalir) btnSalir.style.display = "none";
+
+        // Mostrar filtro manual de supervisor
+        if (filtroSupContainer) filtroSupContainer.style.display = "";
+
+        // Reset filtro
+        if (filtroSupSelect) filtroSupSelect.value = "";
+    }
 }
 
 // ── Render de tabla con filtros aplicados ───────────────────
@@ -124,7 +219,9 @@ function renderTabla() {
 
     tbody.innerHTML = "";
 
-    const filtroSup = (document.getElementById("filtro-supervisor") || {}).value || "";
+    // En modo supervisor, forzar el filtro de supervisor
+    const supActivo = getSupervisorActivo();
+    const filtroSup = supActivo || ((document.getElementById("filtro-supervisor") || {}).value || "");
     const filtroEq = (document.getElementById("filtro-equipo") || {}).value || "";
 
     // Filtrar
@@ -146,7 +243,6 @@ function renderTabla() {
     if (filtrados.length === 0) {
         table.style.display = "none";
         empty.style.display = "block";
-        // Mensaje contextual
         const emptyTitle = empty.querySelector("h3");
         const emptyDesc = empty.querySelector("p");
         if (filtroSup || filtroEq) {
