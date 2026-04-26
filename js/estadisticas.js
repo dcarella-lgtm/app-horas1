@@ -261,7 +261,10 @@ function renderTabla() {
     filtrados.forEach(emp => {
         const tr = document.createElement("tr");
         tr.className = "hover:bg-slate-50 transition-colors cursor-pointer";
-        tr.onclick = () => window.location.href = `empleado.html?legajo=${emp.legajo}`;
+        tr.onclick = (e) => {
+            if (e.target.closest("select, input, button")) return;
+            window.location.href = `empleado.html?legajo=${emp.legajo}`;
+        };
 
         const excedeH50 = emp.h50 > _configCache.limite_mensual_50;
         const excedeH100 = emp.h100 > _configCache.limite_mensual_100;
