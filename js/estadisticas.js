@@ -50,25 +50,37 @@ async function renderStats() {
         const stats = procesarDatos(res.data);
         renderMetrics(stats);
         
+        const empleadosList = Object.values(stats.empleados);
+        
+        // Contador
+        const countEl = document.getElementById("empleados-count");
+        if (countEl) {
+            countEl.classList.remove("hidden");
+            countEl.querySelector("span").textContent = `${empleadosList.length} empleado${empleadosList.length !== 1 ? 's' : ''}`;
+        }
+
         table.style.display = "table";
-        Object.values(stats.empleados).forEach(emp => {
+        empleadosList.forEach(emp => {
             const tr = document.createElement("tr");
-            tr.style.borderBottom = "1px solid #eee";
+            tr.className = "hover:bg-slate-50 transition-colors cursor-pointer";
+            tr.onclick = () => window.location.href = `empleado.html?legajo=${emp.legajo}`;
 
             const excedeH50 = emp.h50 > config.limite_mensual_50;
             const excedeH100 = emp.h100 > config.limite_mensual_100;
+            const totalHoras = (emp.h50 + emp.h100).toFixed(1);
 
-            const badgeStatus = (excedeH50 || excedeH100) 
-                ? '<span style="color:white; background:#d32f2f; padding:2px 8px; border-radius:10px; font-size:0.8em;">Excedido</span>'
-                : '<span style="color:white; background:#388e3c; padding:2px 8px; border-radius:10px; font-size:0.8em;">OK</span>';
+            const badgeHTML = (excedeH50 || excedeH100) 
+                ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-50 text-red-700">Excedido</span>'
+                : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-green-50 text-green-700">OK</span>';
 
             tr.innerHTML = `
-                <td style="padding: 12px;"><strong>${emp.nombre}</strong> <br><small style="color:#666">Leg: ${emp.legajo}</small></td>
-                <td style="padding: 12px; text-align: center;">${emp.ausencias}</td>
-                <td style="padding: 12px; text-align: center;">${emp.demoras}</td>
-                <td style="padding: 12px; text-align: center; color: ${excedeH50 ? '#d32f2f' : '#333'}; font-weight: ${excedeH50 ? 'bold' : 'normal'}">${emp.h50.toFixed(1)} hs</td>
-                <td style="padding: 12px; text-align: center; color: ${excedeH100 ? '#d32f2f' : '#333'}; font-weight: ${excedeH100 ? 'bold' : 'normal'}">${emp.h100.toFixed(1)} hs</td>
-                <td style="padding: 12px; text-align: center;">${badgeStatus}</td>
+                <td class="px-6 py-4"><span class="font-semibold text-slate-800">${emp.nombre}</span></td>
+                <td class="px-6 py-4"><span class="text-xs text-slate-400 font-medium">${emp.legajo}</span></td>
+                <td class="px-6 py-4 text-center">${badgeHTML}</td>
+                <td class="px-6 py-4 text-center font-semibold text-slate-700">${totalHoras} hs</td>
+                <td class="px-6 py-4 text-right">
+                    <span class="text-blue-600 text-xs font-semibold hover:text-blue-800">Ver detalle →</span>
+                </td>
             `;
             tbody.appendChild(tr);
         });
