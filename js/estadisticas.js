@@ -1,5 +1,6 @@
 import { obtenerRegistros, obtenerConfigRRHH } from "./api.js";
 import { inicializarConfiguracion, analizarTipoEvento, getConfigRRHH } from "./config.js";
+import { cargarAsignaciones } from "./asignaciones.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
     await inicializarConfiguracion();
@@ -59,6 +60,9 @@ async function renderStats() {
             countEl.querySelector("span").textContent = `${empleadosList.length} empleado${empleadosList.length !== 1 ? 's' : ''}`;
         }
 
+        // Cargar asignaciones de supervisores/equipos
+        const asignaciones = cargarAsignaciones();
+
         table.style.display = "table";
         empleadosList.forEach(emp => {
             const tr = document.createElement("tr");
@@ -73,9 +77,16 @@ async function renderStats() {
                 ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-50 text-red-700">Excedido</span>'
                 : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-green-50 text-green-700">OK</span>';
 
+            // Asignación de supervisor/equipo
+            const asig = asignaciones[String(emp.legajo)];
+            const supervisor = asig ? asig.supervisor : '-';
+            const equipo = asig ? asig.equipo : '-';
+
             tr.innerHTML = `
                 <td class="px-6 py-4"><span class="font-semibold text-slate-800">${emp.nombre}</span></td>
                 <td class="px-6 py-4"><span class="text-xs text-slate-400 font-medium">${emp.legajo}</span></td>
+                <td class="px-6 py-4"><span class="text-sm text-slate-600">${supervisor}</span></td>
+                <td class="px-6 py-4"><span class="text-xs font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded">${equipo}</span></td>
                 <td class="px-6 py-4 text-center">${badgeHTML}</td>
                 <td class="px-6 py-4 text-center font-semibold text-slate-700">${totalHoras} hs</td>
                 <td class="px-6 py-4 text-right">
