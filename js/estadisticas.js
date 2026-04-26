@@ -1,6 +1,6 @@
 import { obtenerRegistros, obtenerConfigRRHH } from "./api.js";
 import { inicializarConfiguracion, analizarTipoEvento, getConfigRRHH } from "./config.js";
-import { cargarAsignaciones } from "./asignaciones.js";
+import { cargarAsignaciones, actualizarAsignacion, SUPERVISORES, EQUIPOS } from "./asignaciones.js";
 
 // Cache de datos para filtrar sin re-fetch
 let _empleadosCache = [];
@@ -272,22 +272,43 @@ function renderTabla() {
             : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-green-50 text-green-700">OK</span>';
 
         const asig = _asignacionesCache[String(emp.legajo)];
-        const supervisor = asig ? asig.supervisor : '-';
-        const equipo = asig ? asig.equipo : '-';
+        const supActual = asig ? asig.supervisor : '';
+        const eqActual = asig ? asig.equipo : '';
+
+        // Generar options para supervisor
+        const supOptions = ['<option value="">-</option>']
+            .concat(SUPERVISORES.map(s => `<option value="${s}"${s === supActual ? ' selected' : ''}>${s}</option>`))
+            .join('');
+
+        // Generar options para equipo
+        const eqOptions = ['<option value="">-</option>']
+            .concat(EQUIPOS.map(e => `<option value="${e}"${e === eqActual ? ' selected' : ''}>${e}</option>`))
+            .join('');
 
         tr.innerHTML = `
             <td class="px-6 py-4"><span class="font-semibold text-slate-800">${emp.nombre}</span></td>
             <td class="px-6 py-4"><span class="text-xs text-slate-400 font-medium">${emp.legajo}</span></td>
-            <td class="px-6 py-4"><span class="text-sm text-slate-600">${supervisor}</span></td>
-            <td class="px-6 py-4"><span class="text-xs font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded">${equipo}</span></td>
+            <td class="px-6 py-3">
+                <select class="select-supervisor px-2 py-1 rounded-md bg-white border border-slate-200 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 cursor-pointer" data-legajo="${emp.legajo}">
+                    ${supOptions}
+                </select>
+            </td>
+            <td class="px-6 py-3">
+                <select class="select-equipo px-2 py-1 rounded-md bg-white border border-slate-200 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 cursor-pointer" data-legajo="${emp.legajo}">
+                    ${eqOptions}
+                </select>
+            </td>
             <td class="px-6 py-4 text-center">${badgeHTML}</td>
             <td class="px-6 py-4 text-center font-semibold text-slate-700">${totalHoras} hs</td>
             <td class="px-6 py-4 text-right">
-                <span class="text-blue-600 text-xs font-semibold hover:text-blue-800">Ver detalle →</span>
+                <span class="text-blue-600 text-xs font-semibold hover:text-blue-800">Ver detalle \u2192</span>
             </td>
         `;
         tbody.appendChild(tr);
     });
+
+    // Bind change events en selects (delegación evita duplicación)
+    bindSelectEvents(tbody);
 }
 
 // ── Procesamiento de datos ─────────────────────────────────
@@ -347,4 +368,30 @@ function resetMetrics() {
     document.getElementById("total-demoras").innerText = "0";
     document.getElementById("total-h50").innerText = "0 hs";
     document.getElementById("total-h100").innerText = "0 hs";
+}
+
+// ── Event delegation para selects inline ───────────────────
+function bindSelectEvents(tbody) {
+    tbody.addEventListener("click", (e) => {
+        // Prevenir navegación al hacer click en un select
+        if (e.target.tagName === "SELECT" || e.target.tagName === "OPTION") {
+            e.stopPropagation();
+        }
+    });
+
+    tbody.addEventListener("change", (e) => {
+        e.stopPropagation();
+        const el = e.target;
+        const legajo = el.dataset.legajo;
+        if (!legajo) return;
+
+        if (el.classList.contains("select-supervisor")) {
+            _asignacionesCache = actualizarAsignacion(legajo, "supervisor", el.value);
+            poblarFiltros();
+            poblarSelectorSupervisor();
+        } else if (el.classList.contains("select-equipo")) {
+            _asignacionesCache = actualizarAsignacion(legajo, "equipo", el.value);
+            poblarFiltros();
+        }
+    });
 }

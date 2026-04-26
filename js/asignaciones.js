@@ -6,6 +6,10 @@
 
 const STORAGE_KEY = "asignaciones";
 
+// Listas maestras de supervisores y equipos disponibles
+export const SUPERVISORES = ["Juan", "María", "Pedro"];
+export const EQUIPOS = ["Líquidos", "Sólidos", "Envasado"];
+
 // Datos iniciales de ejemplo (se usan solo si no hay nada en localStorage)
 const DEFAULTS = {
     "50026726": { supervisor: "Juan", equipo: "Líquidos" },
@@ -46,4 +50,22 @@ export function guardarAsignaciones(asignaciones) {
 export function obtenerAsignacion(legajo) {
     const todas = cargarAsignaciones();
     return todas[String(legajo)] || null;
+}
+
+/**
+ * Actualiza la asignación de un legajo y persiste.
+ * @param {string} legajo
+ * @param {string} campo - "supervisor" o "equipo"
+ * @param {string} valor
+ * @returns {Object} asignaciones actualizadas
+ */
+export function actualizarAsignacion(legajo, campo, valor) {
+    const todas = cargarAsignaciones();
+    const key = String(legajo);
+    if (!todas[key]) {
+        todas[key] = { supervisor: "", equipo: "" };
+    }
+    todas[key][campo] = valor;
+    guardarAsignaciones(todas);
+    return todas;
 }
