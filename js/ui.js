@@ -399,10 +399,11 @@ export function renderRegistros(registros) {
             `;
             analyticsContainer.style.display = 'grid';
         }
-    } catch (err) {
-        console.error("[UI] ERROR en renderRegistros:", err);
-        showError("Ocurrió un error al procesar los datos para el Dashboard.");
     }
+} catch (err) {
+    console.error("[UI] ERROR en renderRegistros:", err);
+    showError("Ocurrió un error al procesar los datos para el Dashboard.");
+}
 }
 
 export function renderEmpleadoData(registros) {
