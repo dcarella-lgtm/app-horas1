@@ -376,8 +376,10 @@ export function renderRegistros(registros) {
                 <!-- Top Empleados Card -->
                 <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 flex flex-col h-full">
                     <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                        Top Empleados
+                        <span class="p-2 bg-amber-50 text-amber-500 rounded-lg">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                        </span>
+                        Top 5 Horas Extras
                     </h3>
                     <div class="flex-1 flex flex-col gap-1 mt-2">
                         ${topHtml || '<p class="text-sm text-slate-400 italic">No hay horas registradas.</p>'}
