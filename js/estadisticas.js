@@ -156,13 +156,21 @@ function poblarFiltros() {
     const selectEq = document.getElementById("filtro-equipo");
     if (!selectSup || !selectEq) return;
 
-    const supervisores = new Set();
-    const equipos = new Set();
+    // 1. Obtener de la configuración (todos los disponibles)
+    const configSupervisores = JSON.parse(localStorage.getItem('CONFIG_SUPERVISORES') || '[]');
+    const configEquipos = JSON.parse(localStorage.getItem('CONFIG_EQUIPOS') || '[]');
 
+    // 2. Obtener de los datos (por si hay alguno viejo no en config)
+    const supsDeDatos = new Set();
+    const eqsDeDatos = new Set();
     Object.values(_asignacionesCache).forEach(a => {
-        if (a.supervisor) supervisores.add(a.supervisor);
-        if (a.equipo) equipos.add(a.equipo);
+        if (a.supervisor) supsDeDatos.add(a.supervisor);
+        if (a.equipo) eqsDeDatos.add(a.equipo);
     });
+
+    // Combinar
+    const supervisores = new Set([...configSupervisores, ...supsDeDatos]);
+    const equipos = new Set([...configEquipos, ...eqsDeDatos]);
 
     const prevSup = selectSup.value;
     const prevEq = selectEq.value;
@@ -202,11 +210,16 @@ function poblarSelectorSupervisor() {
     const selector = document.getElementById("selector-supervisor-activo");
     if (!selector) return;
 
-    const supervisores = new Set();
+    // 1. Obtener de la configuración
+    const configSupervisores = JSON.parse(localStorage.getItem('CONFIG_SUPERVISORES') || '[]');
+    
+    // 2. Obtener de los datos (por si acaso)
+    const supsDeDatos = new Set();
     Object.values(_asignacionesCache).forEach(a => {
-        if (a.supervisor) supervisores.add(a.supervisor);
+        if (a.supervisor) supsDeDatos.add(a.supervisor);
     });
 
+    const supervisores = new Set([...configSupervisores, ...supsDeDatos]);
     const prev = getSupervisorActivo();
 
     selector.innerHTML = '<option value="">Modo general</option>';
