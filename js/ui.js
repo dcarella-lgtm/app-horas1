@@ -405,6 +405,7 @@ export function renderEmpleadoData(registros) {
                         <span class="font-black text-slate-700 text-base leading-none">${dias[diaInt]}</span>
                         <span class="text-[10px] text-slate-500 font-bold tracking-widest mt-1">${r.fecha.split('-').reverse().join('/')}</span>
                         ${isFeriado ? `<span class="mt-2 text-[9px] bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-bold uppercase w-fit shadow-sm">🎉 ${nombreFeriado}</span>` : ''}
+                        ${r.ausencias ? `<span class="mt-2 text-[9px] bg-amber-100 text-amber-800 px-2 py-1 rounded-md font-bold uppercase w-fit shadow-sm border border-amber-200">📋 ${r.ausencias}</span>` : ''}
                     </div>
                 </td>
                 <td class="px-4 py-4 text-center font-semibold text-slate-600 align-middle">${actIngreso || '-'}</td>
