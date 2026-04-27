@@ -157,8 +157,8 @@ function poblarFiltros() {
     if (!selectSup || !selectEq) return;
 
     // 1. Obtener de la configuración (todos los disponibles)
-    const configSupervisores = JSON.parse(localStorage.getItem('CONFIG_SUPERVISORES') || '[]');
-    const configEquipos = JSON.parse(localStorage.getItem('CONFIG_EQUIPOS') || '[]');
+    const configSupervisores = JSON.parse(localStorage.getItem('lista_supervisores') || '[]');
+    const configEquipos = JSON.parse(localStorage.getItem('lista_equipos') || '[]');
 
     // 2. Obtener de los datos (por si hay alguno viejo no en config)
     const supsDeDatos = new Set();
@@ -211,7 +211,7 @@ function poblarSelectorSupervisor() {
     if (!selector) return;
 
     // 1. Obtener de la configuración
-    const configSupervisores = JSON.parse(localStorage.getItem('CONFIG_SUPERVISORES') || '[]');
+    const configSupervisores = JSON.parse(localStorage.getItem('lista_supervisores') || '[]');
     
     // 2. Obtener de los datos (por si acaso)
     const supsDeDatos = new Set();
