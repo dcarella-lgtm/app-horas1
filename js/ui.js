@@ -189,6 +189,33 @@ export function renderRegistros(registros) {
                 topHtml += `<div class="flex items-center justify-between p-2 border-b border-slate-50 last:border-0"><div class="flex items-center gap-3"><span class="font-bold text-slate-300 text-sm">${i+1}.</span><p class="text-sm font-bold text-slate-800">${r.nombre || '-'}</p></div><span class="text-sm font-black text-blue-600">${r.th.toFixed(1)} hs</span></div>`;
             });
 
+            // Ranking problemas
+            const problemRecords = registros.filter(r => r.estado === 'rechazado' || r.estado === 'revision' || r.estado === 'pendiente');
+            const sortedProblems = problemRecords.sort((a,b) => {
+                if (a.estado === 'rechazado' && b.estado !== 'rechazado') return -1;
+                if (b.estado === 'rechazado' && a.estado !== 'rechazado') return 1;
+                return 0;
+            }).slice(0, 5);
+
+            let problemsHtml = '';
+            if (sortedProblems.length === 0) {
+                problemsHtml = `<div class="p-6 text-center h-full flex flex-col justify-center items-center gap-2"><span class="text-3xl">🏆</span><span class="text-sm font-bold text-emerald-600">Todo el equipo al día, sin problemas.</span></div>`;
+            } else {
+                sortedProblems.forEach(r => {
+                    problemsHtml += `
+                        <div class="flex items-center justify-between p-3 mb-2 bg-slate-50 rounded-lg border border-slate-100 hover:bg-slate-100/50 transition-colors">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-slate-800 text-sm">${r.nombre || '-'}</span>
+                                <span class="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">${r.estado} en periodo</span>
+                            </div>
+                            <span class="text-lg">
+                                ${r.estado === 'rechazado' ? '🔴' : '🟡'}
+                            </span>
+                        </div>
+                    `;
+                });
+            }
+
             analyticsContainer.innerHTML = `
                 <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 lg:col-span-2">
                     <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2">Distribución de Horas Extras</h3>
@@ -207,7 +234,7 @@ export function renderRegistros(registros) {
                 </div>
                 <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 h-full">
                     <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">Estado del equipo</h3>
-                    <p class="text-sm text-slate-500 italic">Analizando periodos...</p>
+                    <div class="flex-1 flex flex-col mt-2">${problemsHtml}</div>
                 </div>
             `;
             analyticsContainer.style.display = 'grid';
