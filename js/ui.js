@@ -360,6 +360,8 @@ export function renderEmpleadoData(registros) {
             const evento = analizarTipoEvento(r);
             const isDemora = evento.tipo === 'demora';
 
+            const isAusenciaInvalida = !r.ausencias || r.ausencias.toUpperCase().includes('DETALLAR AUSENCIA');
+
             if (isMissingPunch) {
                 rowLevel = 'error';
                 errorReason = 'Fichada Incompleta';
@@ -376,7 +378,7 @@ export function renderEmpleadoData(registros) {
                 rowLevel = 'warning';
                 warningReason = 'Demora / Menor Jornada';
                 __empRowWarnings++;
-            } else if ((isNoActivity && !r.ausencias && !isWeekend && !isFeriado)) {
+            } else if (isNoActivity && isAusenciaInvalida && !isWeekend && !isFeriado) {
                 rowLevel = 'warning';
                 warningReason = 'Ausencia sin justificar';
                 __empRowWarnings++;
