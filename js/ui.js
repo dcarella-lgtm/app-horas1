@@ -1,5 +1,5 @@
 // Módulo para manipulación del DOM y eventos de la interfaz
-import { getDetalleFeriado } from "./config.js";
+import { getDetalleFeriado, analizarTipoEvento } from "./config.js";
 
 // Función unificada para ocultar todo y mostrar el estado deseado
 function toggleStates(prefix, state) {
@@ -357,6 +357,9 @@ export function renderEmpleadoData(registros) {
             let errorReason = '';
             let warningReason = '';
 
+            const evento = analizarTipoEvento(r);
+            const isDemora = evento.tipo === 'demora';
+
             if (isMissingPunch) {
                 rowLevel = 'error';
                 errorReason = 'Fichada Incompleta';
@@ -368,6 +371,10 @@ export function renderEmpleadoData(registros) {
             } else if (hasDiff) {
                 rowLevel = 'warning';
                 warningReason = 'Modificado por Mánager';
+                __empRowWarnings++;
+            } else if (isDemora) {
+                rowLevel = 'warning';
+                warningReason = 'Demora / Menor Jornada';
                 __empRowWarnings++;
             } else if ((isNoActivity && !r.ausencias && !isWeekend && !isFeriado)) {
                 rowLevel = 'warning';
