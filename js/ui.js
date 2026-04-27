@@ -360,36 +360,46 @@ export function renderEmpleadoData(registros) {
                 __empRowWarnings++;
             }
 
-            const rowClass = rowLevel === 'error' ? 'bg-red-50/50' : rowLevel === 'warning' ? 'bg-amber-50/50' : 'hover:bg-slate-50/50 transition-colors';
+            const tdFirstClass = rowLevel === 'error' ? 'border-l-4 border-red-500' : rowLevel === 'warning' ? 'border-l-4 border-amber-500' : 'border-l-4 border-transparent';
+            const rowClass = rowLevel === 'error' ? 'bg-red-50/80 text-slate-800' : rowLevel === 'warning' ? 'bg-amber-50/80 text-slate-800' : 'hover:bg-slate-50 transition-colors opacity-60 hover:opacity-100 grayscale hover:grayscale-0';
 
-            const notionInput = (val, fieldId, type = 'number') => {
+            const notionInput = (val, fieldId, isDiff = false) => {
                 const disabled = isDisabled ? 'disabled' : '';
-                return `<input type="${type}" step="0.5" class="edit-input w-full bg-slate-100/50 border-none rounded px-2 py-1 text-center font-bold text-blue-700 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all ${disabled}" 
+                let bgClass = 'bg-slate-100/50 border border-transparent text-slate-400 hover:bg-slate-200/50';
+                
+                if (rowLevel === 'error') {
+                    bgClass = isDiff ? 'bg-white border-2 border-red-500 text-red-700 shadow-md ring-2 ring-red-100' : 'bg-white/60 border border-red-200 text-red-900/50 hover:bg-white';
+                } else if (rowLevel === 'warning') {
+                    bgClass = 'bg-white border-2 border-amber-400 text-amber-900 shadow-md ring-4 ring-amber-100/50 placeholder-amber-300';
+                }
+
+                return `<input type="number" step="0.5" class="edit-input w-full rounded-lg px-2 py-1.5 text-center font-black focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${bgClass} ${disabled}" 
                         data-id="${r.id}" data-field="${fieldId}" value="${val || 0}">`;
             };
 
-            const systemBadge = (val) => `<span class="text-[10px] font-bold text-slate-400 block mb-1">${val || 0}</span>`;
+            const systemBadge = (val) => `<span class="text-[9px] font-bold uppercase tracking-widest ${rowLevel === 'ok' ? 'text-slate-300' : 'text-slate-500'} block mb-1.5">Sist: ${val || 0}</span>`;
 
             tr.className = rowClass;
             tr.innerHTML = `
-                <td class="px-4 py-3 align-top">
+                <td class="px-4 py-4 align-top ${tdFirstClass}">
                     <div class="flex flex-col">
-                        <span class="font-bold text-slate-700">${dias[diaInt]}</span>
-                        <span class="text-[10px] text-slate-400 font-medium">${r.fecha.split('-').reverse().join('/')}</span>
-                        ${isFeriado ? `<span class="mt-1 text-[9px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full font-bold uppercase w-fit">🎉 ${nombreFeriado}</span>` : ''}
+                        <span class="font-black text-slate-700 text-base leading-none">${dias[diaInt]}</span>
+                        <span class="text-[10px] text-slate-500 font-bold tracking-widest mt-1">${r.fecha.split('-').reverse().join('/')}</span>
+                        ${isFeriado ? `<span class="mt-2 text-[9px] bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-bold uppercase w-fit shadow-sm">🎉 ${nombreFeriado}</span>` : ''}
                     </div>
                 </td>
-                <td class="px-4 py-3 text-center text-slate-500 align-middle">${actIngreso || '-'}</td>
-                <td class="px-4 py-3 text-center text-slate-500 align-middle border-r border-slate-50">${actSalida || '-'}</td>
-                <td class="px-4 py-3 text-center bg-blue-50/20 align-middle">
-                    ${systemBadge(r.horas_50_auto)} ${notionInput(r.horas_50_manager, 'horas_50_manager')}
+                <td class="px-4 py-4 text-center font-semibold text-slate-600 align-middle">${actIngreso || '-'}</td>
+                <td class="px-4 py-4 text-center font-semibold text-slate-600 align-middle border-r border-slate-200/50">${actSalida || '-'}</td>
+                <td class="px-4 py-4 text-center ${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle">
+                    ${systemBadge(r.horas_50_auto)} ${notionInput(r.horas_50_manager, 'horas_50_manager', diff50)}
                 </td>
-                <td class="px-4 py-3 text-center bg-blue-50/20 align-middle">
-                    ${systemBadge(r.horas_100_auto)} ${notionInput(r.horas_100_manager, 'horas_100_manager')}
+                <td class="px-4 py-4 text-center ${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle">
+                    ${systemBadge(r.horas_100_auto)} ${notionInput(r.horas_100_manager, 'horas_100_manager', diff100)}
                 </td>
-                <td class="px-4 py-3 text-center bg-blue-50/20 align-middle border-r border-slate-50">
-                    ${systemBadge(r.horas_feriado_auto)} ${notionInput(r.horas_feriado_manager, 'horas_feriado_manager')}
+                <td class="px-4 py-4 text-center ${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle border-r border-slate-200/50">
+                    ${systemBadge(r.horas_feriado_auto)} ${notionInput(r.horas_feriado_manager, 'horas_feriado_manager', diffFer)}
                 </td>
+
                 <td class="px-4 py-3 align-top">
                     <input type="text" class="edit-input w-full bg-transparent border-none text-xs text-slate-600 focus:bg-white focus:ring-1 focus:ring-slate-200 p-1 rounded ${isDisabled ? 'disabled' : ''}" 
                            data-id="${r.id}" data-field="comentarios" placeholder="Agregar comentario..." value="${r.comentarios || ''}">
