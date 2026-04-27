@@ -153,11 +153,44 @@
             Cargando empleados...
         </div>
 
+        <!-- Bulk Action Bar (Floating/Sticky) -->
+        <div id="bulk-action-bar" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 z-[60] border border-slate-700/50 backdrop-blur-md transition-all duration-300 opacity-0 pointer-events-none translate-y-10">
+            <div class="flex items-center gap-3 pr-6 border-r border-slate-700">
+                <span id="selected-count" class="bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold">0</span>
+                <span class="text-xs font-bold uppercase tracking-wider">Seleccionados</span>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="flex flex-col gap-0.5">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Supervisor</label>
+                    <select id="bulk-supervisor" class="bg-slate-800 border-none rounded-lg px-3 py-1.5 text-sm font-semibold text-white focus:ring-2 focus:ring-blue-500 cursor-pointer min-w-[140px]">
+                        <option value="">Sin cambios</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Equipo</label>
+                    <select id="bulk-equipo" class="bg-slate-800 border-none rounded-lg px-3 py-1.5 text-sm font-semibold text-white focus:ring-2 focus:ring-blue-500 cursor-pointer min-w-[140px]">
+                        <option value="">Sin cambios</option>
+                    </select>
+                </div>
+                <button id="btn-bulk-assign" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 mt-3.5 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95">
+                    Asignar masivo
+                </button>
+            </div>
+
+            <button id="btn-cancel-bulk" class="text-slate-400 hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
         <!-- Tabla de Empleados -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
             <table id="stats-table" class="w-full" style="display: none;">
                 <thead>
-                    <tr class="border-b border-slate-100">
+                    <tr class="border-b border-slate-100 bg-slate-50/50">
+                        <th class="px-6 py-3 text-left w-10">
+                            <input type="checkbox" id="check-all-employees" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                        </th>
                         <th class="text-left px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nombre</th>
                         <th class="text-left px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Legajo</th>
                         <th class="text-left px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Supervisor</th>

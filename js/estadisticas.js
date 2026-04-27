@@ -1,6 +1,6 @@
 import { obtenerRegistros, obtenerConfigRRHH } from "./api.js";
 import { inicializarConfiguracion, analizarTipoEvento, getConfigRRHH } from "./config.js";
-import { cargarAsignaciones, actualizarAsignacion, cargarListaSupervisores, cargarListaEquipos } from "./asignaciones.js";
+import { cargarAsignaciones, actualizarAsignacion, cargarListaSupervisores, cargarListaEquipos, sincronizarAsignaciones } from "./asignaciones.js";
 
 // Cache de datos para filtrar sin re-fetch
 let _empleadosCache = [];
@@ -70,6 +70,34 @@ async function init() {
 
     // Cargar estadísticas iniciales
     renderStats();
+
+    // Init Bulk UI
+    initBulkUI();
+}
+
+function initBulkUI() {
+    const checkAll = document.getElementById("check-all-employees");
+    if (checkAll) {
+        checkAll.addEventListener("change", (e) => {
+            const checks = document.querySelectorAll(".check-emp");
+            checks.forEach(c => c.checked = e.target.checked);
+            updateBulkBar();
+        });
+    }
+
+    const btnAssign = document.getElementById("btn-bulk-assign");
+    if (btnAssign) {
+        btnAssign.addEventListener("click", () => aplicarAsignacionMasiva());
+    }
+
+    const btnCancel = document.getElementById("btn-cancel-bulk");
+    if (btnCancel) {
+        btnCancel.addEventListener("click", () => {
+            document.getElementById("check-all-employees").checked = false;
+            document.querySelectorAll(".check-emp").forEach(c => c.checked = false);
+            updateBulkBar();
+        });
+    }
 }
 
 // ── Fetch + procesamiento ──────────────────────────────────
@@ -94,7 +122,7 @@ async function renderStats() {
 
     const res = await obtenerRegistros({ fechaDesde, fechaHasta });
     _configCache = getConfigRRHH();
-    _asignacionesCache = cargarAsignaciones();
+    _asignacionesCache = await sincronizarAsignaciones();
 
     loading.style.display = "none";
 
@@ -151,6 +179,22 @@ function poblarFiltros() {
 
     selectSup.value = prevSup || "";
     selectEq.value = prevEq || "";
+
+    // También poblar los selects del bulk bar
+    const bulkSup = document.getElementById("bulk-supervisor");
+    const bulkEq = document.getElementById("bulk-equipo");
+    if (bulkSup) {
+        bulkSup.innerHTML = '<option value="">Sin cambios</option>';
+        [...supervisores].sort().forEach(s => {
+            bulkSup.innerHTML += `<option value="${s}">${s}</option>`;
+        });
+    }
+    if (bulkEq) {
+        bulkEq.innerHTML = '<option value="">Sin cambios</option>';
+        [...equipos].sort().forEach(e => {
+            bulkEq.innerHTML += `<option value="${e}">${e}</option>`;
+        });
+    }
 }
 
 // ── Poblar selector de modo supervisor ─────────────────────
@@ -291,6 +335,9 @@ function renderTabla() {
             .join('');
 
         tr.innerHTML = `
+            <td class="px-6 py-4">
+                <input type="checkbox" class="check-emp w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" data-legajo="${emp.legajo}">
+            </td>
             <td class="px-6 py-4"><span class="font-semibold text-slate-800">${emp.nombre}</span></td>
             <td class="px-6 py-4"><span class="text-xs text-slate-400 font-medium">${emp.legajo}</span></td>
             <td class="px-6 py-3">
@@ -311,6 +358,16 @@ function renderTabla() {
         `;
         tbody.appendChild(tr);
     });
+
+    // Escuchar cambios en checkboxes individuales
+    tbody.querySelectorAll(".check-emp").forEach(cb => {
+        cb.addEventListener("change", () => updateBulkBar());
+    });
+
+    // Resetear check-all al renderizar
+    const checkAll = document.getElementById("check-all-employees");
+    if (checkAll) checkAll.checked = false;
+    updateBulkBar();
 
     // Bind change events en selects (delegación evita duplicación)
     bindSelectEvents(tbody);
@@ -384,19 +441,71 @@ function bindSelectEvents(tbody) {
         }
     });
 
-    tbody.addEventListener("change", (e) => {
+    tbody.addEventListener("change", async (e) => {
         e.stopPropagation();
         const el = e.target;
         const legajo = el.dataset.legajo;
         if (!legajo) return;
 
         if (el.classList.contains("select-supervisor")) {
-            _asignacionesCache = actualizarAsignacion(legajo, "supervisor", el.value);
+            _asignacionesCache = await actualizarAsignacion(legajo, "supervisor", el.value);
             poblarFiltros();
             poblarSelectorSupervisor();
         } else if (el.classList.contains("select-equipo")) {
-            _asignacionesCache = actualizarAsignacion(legajo, "equipo", el.value);
+            _asignacionesCache = await actualizarAsignacion(legajo, "equipo", el.value);
             poblarFiltros();
         }
     });
+}
+
+// ── Bulk Actions ───────────────────────────────────────────
+function updateBulkBar() {
+    const bar = document.getElementById("bulk-action-bar");
+    const countEl = document.getElementById("selected-count");
+    const checks = document.querySelectorAll(".check-emp:checked");
+    const total = checks.length;
+
+    if (total > 0) {
+        countEl.textContent = total;
+        bar.classList.remove("opacity-0", "pointer-events-none", "translate-y-10");
+        bar.classList.add("opacity-100", "pointer-events-auto", "translate-y-0");
+    } else {
+        bar.classList.add("opacity-0", "pointer-events-none", "translate-y-10");
+        bar.classList.remove("opacity-100", "pointer-events-auto", "translate-y-0");
+    }
+}
+
+function aplicarAsignacionMasiva() {
+    const supervisor = document.getElementById("bulk-supervisor").value;
+    const equipo = document.getElementById("bulk-equipo").value;
+
+    if (!supervisor && !equipo) {
+        alert("Por favor seleccioná un supervisor o equipo para asignar.");
+        return;
+    }
+
+    const checks = document.querySelectorAll(".check-emp:checked");
+    const legajos = Array.from(checks).map(cb => cb.dataset.legajo);
+
+    let msg = `¿Asignar cambios a ${legajos.length} empleados?`;
+    if (supervisor) msg += `\n- Supervisor: ${supervisor}`;
+    if (equipo) msg += `\n- Equipo: ${equipo}`;
+
+    if (confirm(msg)) {
+        const promesas = [];
+        legajos.forEach(legajo => {
+            if (supervisor) promesas.push(actualizarAsignacion(legajo, "supervisor", supervisor));
+            if (equipo) promesas.push(actualizarAsignacion(legajo, "equipo", equipo));
+        });
+
+        Promise.all(promesas).then(() => {
+            // Refrescar datos locales y UI
+            _asignacionesCache = cargarAsignaciones();
+            renderTabla();
+            poblarFiltros();
+            poblarSelectorSupervisor();
+            
+            alert("Asignación masiva completada.");
+        });
+    }
 }

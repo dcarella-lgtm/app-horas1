@@ -1,12 +1,13 @@
 /**
  * Módulo de Asignaciones — Supervisor / Equipo
- * Persistencia en localStorage (sin backend).
- * Base para filtros por equipo en fases siguientes.
+ * Sincronización con Supabase y respaldo en localStorage.
  */
+
+import { obtenerAsignacionesDB, guardarAsignacionDB } from "./api.js";
 
 const STORAGE_KEY = "asignaciones";
 
-// Funciones para manejar listas maestras
+// Funciones para manejar listas maestras (Siguen siendo locales por ahora)
 export function cargarListaSupervisores() {
     const raw = localStorage.getItem("lista_supervisores");
     if (raw) return JSON.parse(raw);
@@ -31,15 +32,8 @@ export function guardarListaEquipos(lista) {
     localStorage.setItem("lista_equipos", JSON.stringify(lista));
 }
 
-// Datos iniciales de ejemplo (se usan solo si no hay nada en localStorage)
-const DEFAULTS = {
-    "50026726": { supervisor: "Juan", equipo: "Líquidos" },
-    "50046576": { supervisor: "María", equipo: "Sólidos" }
-};
-
 /**
- * Carga las asignaciones desde localStorage.
- * Si no existen, inicializa con los defaults y los persiste.
+ * Carga las asignaciones desde localStorage (Cache rápido).
  */
 export function cargarAsignaciones() {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -47,17 +41,35 @@ export function cargarAsignaciones() {
         try {
             return JSON.parse(raw);
         } catch (e) {
-            console.warn("[Asignaciones] Error al parsear localStorage, usando defaults.", e);
+            console.warn("[Asignaciones] Error al parsear localStorage", e);
         }
     }
-    // Primera vez: guardar defaults
-    guardarAsignaciones(DEFAULTS);
-    return { ...DEFAULTS };
+    return {};
+}
+
+/**
+ * Sincroniza las asignaciones locales con las de la Base de Datos.
+ */
+export async function sincronizarAsignaciones() {
+    console.log("[Asignaciones] Sincronizando con DB...");
+    const res = await obtenerAsignacionesDB();
+    if (res.ok && res.data) {
+        const mapa = {};
+        res.data.forEach(asig => {
+            mapa[asig.legajo] = {
+                supervisor: asig.supervisor,
+                equipo: asig.equipo
+            };
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(mapa));
+        console.log(`[Asignaciones] ${res.data.length} asignaciones sincronizadas.`);
+        return mapa;
+    }
+    return cargarAsignaciones();
 }
 
 /**
  * Guarda las asignaciones en localStorage.
- * @param {Object} asignaciones - { legajo: { supervisor, equipo } }
  */
 export function guardarAsignaciones(asignaciones) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(asignaciones));
@@ -65,8 +77,6 @@ export function guardarAsignaciones(asignaciones) {
 
 /**
  * Obtiene la asignación de un legajo específico.
- * @param {string} legajo
- * @returns {{ supervisor: string, equipo: string } | null}
  */
 export function obtenerAsignacion(legajo) {
     const todas = cargarAsignaciones();
@@ -74,19 +84,32 @@ export function obtenerAsignacion(legajo) {
 }
 
 /**
- * Actualiza la asignación de un legajo y persiste.
+ * Actualiza la asignación de un legajo en DB y LocalStorage.
  * @param {string} legajo
  * @param {string} campo - "supervisor" o "equipo"
  * @param {string} valor
- * @returns {Object} asignaciones actualizadas
  */
-export function actualizarAsignacion(legajo, campo, valor) {
+export async function actualizarAsignacion(legajo, campo, valor) {
     const todas = cargarAsignaciones();
     const key = String(legajo);
+    
     if (!todas[key]) {
         todas[key] = { supervisor: "", equipo: "" };
     }
+    
     todas[key][campo] = valor;
+    
+    // 1. Guardar en LocalStorage para feedback inmediato
     guardarAsignaciones(todas);
+    
+    // 2. Guardar en Supabase (Async)
+    const asigDB = {
+        legajo: key,
+        supervisor: todas[key].supervisor,
+        equipo: todas[key].equipo
+    };
+    
+    await guardarAsignacionDB(asigDB);
+    
     return todas;
 }

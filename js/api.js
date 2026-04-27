@@ -289,3 +289,42 @@ export async function obtenerUltimaFechaCarga() {
         return { ok: false, fecha: null };
     }
 }
+// ============================================================
+// ASIGNACIONES (Supervisor / Equipo)
+// ============================================================
+
+/**
+ * Obtiene todas las asignaciones de legajos desde Supabase.
+ */
+export async function obtenerAsignacionesDB() {
+    try {
+        const { data, error } = await supabase
+            .from("config_asignaciones")
+            .select("*");
+
+        if (error) throw error;
+        return { ok: true, data };
+    } catch (err) {
+        console.error("[API] Error al obtener asignaciones:", err.message);
+        return { ok: false, data: [], error: err.message };
+    }
+}
+
+/**
+ * Guarda o actualiza una asignación específica.
+ * @param {Object} asignacion - { legajo, supervisor?, equipo? }
+ */
+export async function guardarAsignacionDB(asignacion) {
+    try {
+        const { data, error } = await supabase
+            .from("config_asignaciones")
+            .upsert([asignacion], { onConflict: 'legajo' })
+            .select();
+
+        if (error) throw error;
+        return { ok: true, data: data[0] };
+    } catch (err) {
+        console.error("[API] Error al guardar asignación:", err.message);
+        return { ok: false, error: err.message };
+    }
+}

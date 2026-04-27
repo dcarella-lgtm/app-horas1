@@ -155,11 +155,19 @@
                 <p class="text-slate-400 text-sm mt-1">Subí un archivo Excel para comenzar la revisión.</p>
             </div>
 
-            <!-- Lista de Empleados (SaaS Cards) -->
-            <div id="registros-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style="display: none;">
-                <!-- Inyectado por ui.js -->
+            <!-- Botón Ver Empleados (Nueva Acción Principal) -->
+            <div id="action-ver-empleados" class="text-center mb-8" style="display: none;">
+                <button onclick="window.location.href='estadisticas.html'" class="bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-xl font-bold shadow-sm transition-all duration-200 flex items-center gap-2 mx-auto">
+                    <span>Ir a vista de Empleados</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </button>
             </div>
-            
+
+            <!-- Lista de Empleados (Desactivada - Mudada a vista Empleados) -->
+            <!-- 
+            <div id="registros-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style="display: none;">
+            </div>
+            -->
             <!-- Panel de Análisis (Fase 5) -->
             <div id="analytics-container" class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6" style="display: none;">
                 <!-- Inyectado por ui.js -->

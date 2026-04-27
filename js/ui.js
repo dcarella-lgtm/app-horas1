@@ -3,7 +3,7 @@ import { getDetalleFeriado } from "./config.js";
 
 // Función unificada para ocultar todo y mostrar el estado deseado
 function toggleStates(prefix, state) {
-    const ids = ['loading-state', 'empty-state', 'error-state', 'registros-grid', 'registros-table', 'emp-semanas-container', 'actions'];
+    const ids = ['loading-state', 'empty-state', 'error-state', 'registros-grid', 'registros-table', 'emp-semanas-container', 'actions', 'action-ver-empleados'];
     ids.forEach(id => {
         const elId = prefix ? `${prefix}-${id}` : id;
         const el = document.getElementById(elId);
@@ -15,6 +15,7 @@ function toggleStates(prefix, state) {
         const gridId = prefix ? `${prefix}-registros-grid` : 'registros-grid';
         const tblId = prefix ? `${prefix}-registros-table` : 'registros-table';
         const semId = prefix ? `${prefix}-semanas-container` : 'emp-semanas-container';
+        const actionBtnId = prefix ? `${prefix}-action-ver-empleados` : 'action-ver-empleados';
         
         const grid = document.getElementById(gridId);
         if (grid) grid.style.display = 'grid';
@@ -28,6 +29,9 @@ function toggleStates(prefix, state) {
         const actsId = prefix ? `${prefix}-actions` : 'actions';
         const acts = document.getElementById(actsId);
         if (acts) acts.style.display = 'block';
+
+        const actionBtn = document.getElementById(actionBtnId);
+        if (actionBtn) actionBtn.style.display = 'block';
     } else {
         const el = document.getElementById(activeId);
         if (el) el.style.display = 'block';
@@ -211,8 +215,11 @@ export function renderRegistros(registros) {
 
         if (alertas.length === 0) {
             alertasHTML = `
-                <div class="flex items-center gap-2 p-2">
-                    <span class="text-slate-600 font-semibold text-sm">Sin alertas ✔</span>
+                <div class="flex items-center justify-center p-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <span class="text-emerald-600 font-bold text-lg flex items-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Sin alertas — todo listo para liquidar
+                    </span>
                 </div>
             `;
         } else {
@@ -255,65 +262,12 @@ export function renderRegistros(registros) {
     }
 
     toggleStates('', 'table');
-    grid.innerHTML = '';
-
-    // Fragmento para performance
-    const fragment = document.createDocumentFragment();
-
-    registros.forEach(r => {
-        const totalExtras = Number(r.total_50||0) + Number(r.total_100||0) + Number(r.total_feriado||0);
-        const estadoLimpio = r.estado ? r.estado.toLowerCase() : 'pendiente';
-        
-        // Determinar el nivel del registro
-        const hasError = estadoLimpio === 'rechazado';
-        const hasWarning = estadoLimpio === 'revision' || estadoLimpio === 'pendiente';
-        
-        const card = document.createElement('div');
-        
-        // Lógica de estilos y bordes basados en estado
-        let stateClasses = 'bg-white border-slate-100';
-        if (hasError) stateClasses = 'bg-red-50/50 border-red-300';
-        else if (hasWarning) stateClasses = 'bg-amber-50/30 border-amber-300';
-        
-        card.className = `group rounded-xl shadow-sm p-5 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border ${stateClasses} flex flex-col justify-between gap-4`;
-        
-        card.onclick = () => { window.location.href = `empleado.html?legajo=${r.legajo}`; };
-
-        // Badge estilos explícitos de Tailwind
-        let badgeClass = 'bg-slate-100 text-slate-700';
-        if (estadoLimpio === 'aprobado') badgeClass = 'bg-green-100 text-green-700';
-        else if (hasWarning) badgeClass = 'bg-yellow-100 text-yellow-700';
-        else if (hasError) badgeClass = 'bg-red-100 text-red-700';
-
-        card.innerHTML = `
-            <div class="flex justify-between items-start">
-                <div>
-                    <h3 class="font-bold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">${r.nombre || '-'}</h3>
-                    <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-0.5">${r.legajo || '-'}</p>
-                </div>
-                <span class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full ${badgeClass}">${estadoLimpio}</span>
-            </div>
-
-            <div class="mt-1">
-                <p class="text-[10px] uppercase font-bold text-slate-400 mb-0.5">Total de Horas</p>
-                <p class="text-[22px] font-black text-slate-800">${totalExtras > 0 ? totalExtras.toFixed(1) + ' hs' : '0 hs'}</p>
-            </div>
-
-            <div class="flex items-center justify-between pt-3 border-t ${hasError ? 'border-red-200' : hasWarning ? 'border-amber-200' : 'border-slate-100'} mt-2">
-                <div class="flex items-center gap-1.5">
-                    ${hasError ? '<span class="text-xs font-bold text-red-600 flex items-center gap-1"><span>⚠</span> Inconsistencia</span>' : 
-                      hasWarning ? '<span class="text-xs font-bold text-amber-600 flex items-center gap-1"><span>⚠</span> Revisar</span>' :
-                      '<span class="text-xs font-bold text-emerald-600 flex items-center gap-1"><span>✔</span> OK</span>'}
-                </div>
-                <div class="text-blue-600 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
-                </div>
-            </div>
-        `;
-        fragment.appendChild(card);
-    });
-
-    grid.appendChild(fragment);
+    
+    // El grid ya no se usa, la lista de empleados se mudó a estadisticas.html
+    // grid.innerHTML = '';
+    // const fragment = document.createDocumentFragment();
+    // registros.forEach(r => { ... });
+    // grid.appendChild(fragment);
 
     // LÓGICA FASE 5: Analytics
     const analyticsContainer = document.getElementById('analytics-container');
