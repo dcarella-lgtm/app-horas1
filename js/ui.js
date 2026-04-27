@@ -110,14 +110,12 @@ export function agruparPorSemana(registros) {
 export function renderRegistros(registros) {
     console.log("[UI] Renderizando registros...", registros?.length);
     try {
-        const grid = document.getElementById('registros-grid');
-        
         if (!registros || registros.length === 0) {
             showEmpty(false);
             return;
         }
 
-        // Lógica Fase 2: Cálculo de KPIs basados en empleados agrupados
+        // 1. KPIs
         const kpiContainer = document.getElementById('kpi-container');
         if (kpiContainer) {
             const totalErrores = registros.filter(r => r.estado === 'rechazado').length;
@@ -126,157 +124,52 @@ export function renderRegistros(registros) {
             const totalHoras = registros.reduce((acc, r) => acc + (Number(r.total_50||0) + Number(r.total_100||0) + Number(r.total_feriado||0)), 0);
 
             kpiContainer.innerHTML = `
-                <!-- Card: Errores -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-red-500">
-                    <div class="flex justify-between items-start">
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Con errores</p>
-                        <span class="bg-red-50 text-red-500 p-1.5 rounded-lg">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                        </span>
-                    </div>
+                    <div class="flex justify-between items-start"><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Con errores</p><span class="bg-red-50 text-red-500 p-1.5 rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></span></div>
                     <h3 class="text-3xl font-black text-slate-800 mt-2">${totalErrores}</h3>
                     <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">Requieren atención inmediata</p>
                 </div>
-
-                <!-- Card: Revisión -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-amber-500">
-                    <div class="flex justify-between items-start">
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">En revisión / Pend.</p>
-                        <span class="bg-amber-50 text-amber-500 p-1.5 rounded-lg">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        </span>
-                    </div>
+                    <div class="flex justify-between items-start"><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">En revisión / Pend.</p><span class="bg-amber-50 text-amber-500 p-1.5 rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span></div>
                     <h3 class="text-3xl font-black text-slate-800 mt-2">${totalRevision}</h3>
                     <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">Pendientes de aprobación</p>
                 </div>
-
-                <!-- Card: Aprobados -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-emerald-500">
-                    <div class="flex justify-between items-start">
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Aprobados</p>
-                        <span class="bg-emerald-50 text-emerald-500 p-1.5 rounded-lg">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        </span>
-                    </div>
+                    <div class="flex justify-between items-start"><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Aprobados</p><span class="bg-emerald-50 text-emerald-500 p-1.5 rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></span></div>
                     <h3 class="text-3xl font-black text-slate-800 mt-2">${totalAprobados}</h3>
                     <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">Listos para liquidación</p>
                 </div>
-
-                <!-- Card: Horas Totales -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-blue-600">
-                    <div class="flex justify-between items-start">
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Horas Totales</p>
-                        <span class="bg-blue-50 text-blue-600 p-1.5 rounded-lg">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        </span>
-                    </div>
+                    <div class="flex justify-between items-start"><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Horas Totales</p><span class="bg-blue-50 text-blue-600 p-1.5 rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span></div>
                     <h3 class="text-3xl font-black text-slate-800 mt-2">${(totalHoras || 0).toFixed(1)} <span class="text-lg font-bold text-slate-400">hs</span></h3>
                     <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">Acumulado del periodo</p>
                 </div>
             `;
         }
 
+        // 2. Alertas
         const alertsContainer = document.getElementById('alerts-container');
         if (alertsContainer) {
-            let alertasHTML = '';
-            const alertas = [];
-
-            // 1. Errores críticos (🔴) - Máxima prioridad
             const cantErrores = registros.filter(r => r.estado === 'rechazado').length;
-            if (cantErrores > 0) {
-                alertas.push({
-                    type: 'error',
-                    color: 'red',
-                    icono: '🔴',
-                    texto: `${cantErrores} empleado(s) con inconsistencias críticas — requiere revisión inmediata`
-                });
-            }
-
-            // 2. Advertencias (🟡) - Prioridad media
             const cantWarnings = registros.filter(r => r.estado === 'pendiente' || r.estado === 'revision').length;
-            if (cantWarnings > 0) {
-                alertas.push({
-                    type: 'warning',
-                    color: 'yellow',
-                    icono: '🟡',
-                    texto: `${cantWarnings} empleado(s) pendientes de revisión o con datos incompletos`
-                });
-            }
-
-            // 3. Informativos (ℹ️) - Baja prioridad (opcional, p. ej. todos listos)
-            const cantAprobados = registros.filter(r => r.estado === 'aprobado').length;
-            if (cantAprobados > 0 && cantErrores === 0 && cantWarnings === 0) {
-                alertas.push({
-                    type: 'info',
-                    color: 'blue',
-                    icono: 'ℹ️',
-                    texto: `${cantAprobados} empleado(s) aprobados — listos para exportar la liquidación`
-                });
-            }
-
-            if (alertas.length === 0) {
-                alertasHTML = `
-                    <div class="flex items-center justify-center p-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                        <span class="text-emerald-600 font-bold text-lg flex items-center gap-2">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                            Sin alertas — todo listo para liquidar
-                        </span>
-                    </div>
-                `;
+            
+            if (cantErrores === 0 && cantWarnings === 0) {
+                alertsContainer.innerHTML = `<div class="flex items-center justify-center p-6 bg-slate-50 rounded-xl border border-dashed border-slate-200"><span class="text-emerald-600 font-bold text-lg flex items-center gap-2"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Sin alertas — todo listo para liquidar</span></div>`;
             } else {
-                alertasHTML = `
-                    <div class="flex flex-col gap-2">
-                `;
-                
-                // Renderizadas en el orden del array (Errores -> Advertencias -> Informativas)
-                alertas.forEach(alerta => {
-                    let bgClass = '';
-                    let textClass = '';
-                    
-                    if (alerta.color === 'red') {
-                        bgClass = 'bg-red-50 hover:bg-red-100 border border-red-100';
-                        textClass = 'text-red-700';
-                    } else if (alerta.color === 'yellow') {
-                        bgClass = 'bg-amber-50 hover:bg-amber-100 border border-amber-100';
-                        textClass = 'text-amber-700';
-                    } else if (alerta.color === 'blue') {
-                        bgClass = 'bg-blue-50 hover:bg-blue-100 border border-blue-100';
-                        textClass = 'text-blue-700';
-                    }
-                    
-                    alertasHTML += `
-                        <div data-type="${alerta.type}" class="flex items-center gap-3 p-3 rounded-lg ${bgClass} cursor-pointer transition-colors shadow-sm">
-                            <span class="text-lg leading-none">${alerta.icono}</span>
-                            <span class="font-semibold text-sm ${textClass}">${alerta.texto}</span>
-                            <span class="ml-auto text-slate-400 opacity-50 group-hover:opacity-100 transition-opacity">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                            </span>
-                        </div>
-                    `;
-                });
-                
-                alertasHTML += '</div>';
+                let html = '<div class="flex flex-col gap-2">';
+                if (cantErrores > 0) html += `<div class="flex items-center gap-3 p-3 rounded-lg bg-red-50 border border-red-100 text-red-700 shadow-sm"><span class="text-lg">🔴</span><span class="font-semibold text-sm">${cantErrores} empleado(s) con inconsistencias críticas</span></div>`;
+                if (cantWarnings > 0) html += `<div class="flex items-center gap-3 p-3 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 shadow-sm"><span class="text-lg">🟡</span><span class="font-semibold text-sm">${cantWarnings} empleado(s) pendientes de revisión</span></div>`;
+                html += '</div>';
+                alertsContainer.innerHTML = html;
             }
-
-            alertsContainer.innerHTML = alertasHTML;
             alertsContainer.style.display = 'block';
         }
 
         toggleStates('', 'table');
-    
-    // El grid ya no se usa, la lista de empleados se mudó a estadisticas.html
-    // grid.innerHTML = '';
-    // const fragment = document.createDocumentFragment();
-    // registros.forEach(r => { ... });
-    // grid.appendChild(fragment);
 
-    // LÓGICA FASE 5: Analytics
-    const analyticsContainer = document.getElementById('analytics-container');
-    if (analyticsContainer) {
-        if (registros.length === 0) {
-            analyticsContainer.innerHTML = '';
-            analyticsContainer.style.display = 'none';
-        } else {
+        // 3. Analytics
+        const analyticsContainer = document.getElementById('analytics-container');
+        if (analyticsContainer) {
             let sum50 = 0, sum100 = 0, sumFer = 0;
             registros.forEach(r => {
                 sum50 += Number(r.total_50 || 0);
@@ -288,122 +181,40 @@ export function renderRegistros(registros) {
             const pct100 = totalH > 0 ? (sum100 / totalH * 100).toFixed(1) : 0;
             const pctFer = totalH > 0 ? (sumFer / totalH * 100).toFixed(1) : 0;
             
-            // Top 5 Empleados por horas
             const sortedByHours = [...registros].map(r => ({...r, th: Number(r.total_50||0)+Number(r.total_100||0)+Number(r.total_feriado||0)}))
-                .sort((a,b) => b.th - a.th)
-                .slice(0, 5);
+                .sort((a,b) => b.th - a.th).slice(0, 5);
                 
             let topHtml = '';
             sortedByHours.forEach((r, i) => {
-                let badgeClass = 'bg-slate-100 text-slate-700';
-                if (r.estado === 'aprobado') badgeClass = 'bg-green-100 text-green-700';
-                else if (r.estado === 'revision' || r.estado === 'pendiente') badgeClass = 'bg-yellow-100 text-yellow-700';
-                else if (r.estado === 'rechazado') badgeClass = 'bg-red-100 text-red-700';
-
-                topHtml += `
-                    <div class="flex items-center justify-between p-2 hover:bg-slate-50/80 rounded-lg transition-colors border-b border-slate-50 last:border-0 last:pb-0">
-                        <div class="flex items-center gap-3">
-                            <span class="font-bold text-slate-300 w-4 text-sm">${i+1}.</span>
-                            <div>
-                                <p class="text-sm font-bold text-slate-800">${r.nombre || '-'}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest rounded-full ${badgeClass}">${r.estado}</span>
-                            <span class="text-sm font-black text-blue-600 w-12 text-right">${r.th.toFixed(1)} hs</span>
-                        </div>
-                    </div>
-                `;
+                topHtml += `<div class="flex items-center justify-between p-2 border-b border-slate-50 last:border-0"><div class="flex items-center gap-3"><span class="font-bold text-slate-300 text-sm">${i+1}.</span><p class="text-sm font-bold text-slate-800">${r.nombre || '-'}</p></div><span class="text-sm font-black text-blue-600">${r.th.toFixed(1)} hs</span></div>`;
             });
 
-            // Ranking problemas
-            const problemRecords = registros.filter(r => r.estado === 'rechazado' || r.estado === 'revision' || r.estado === 'pendiente');
-            const sortedProblems = problemRecords.sort((a,b) => {
-                if (a.estado === 'rechazado' && b.estado !== 'rechazado') return -1;
-                if (b.estado === 'rechazado' && a.estado !== 'rechazado') return 1;
-                return 0;
-            }).slice(0, 5);
-
-            let problemsHtml = '';
-            if (sortedProblems.length === 0) {
-                problemsHtml = `<div class="p-6 text-center h-full flex flex-col justify-center items-center gap-2"><span class="text-3xl">🏆</span><span class="text-sm font-bold text-emerald-600">Todo el equipo al día, sin problemas.</span></div>`;
-            } else {
-                sortedProblems.forEach(r => {
-                    problemsHtml += `
-                        <div class="flex items-center justify-between p-3 mb-2 bg-slate-50 rounded-lg border border-slate-100 hover:bg-slate-100/50 transition-colors">
-                            <div class="flex flex-col">
-                                <span class="font-bold text-slate-800 text-sm">${r.nombre || '-'}</span>
-                                <span class="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">${r.estado} en periodo</span>
-                            </div>
-                            <span class="text-lg">
-                                ${r.estado === 'rechazado' ? '🔴' : '🟡'}
-                            </span>
-                        </div>
-                    `;
-                });
-            }
-
             analyticsContainer.innerHTML = `
-                <!-- Distribución Card -->
                 <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 lg:col-span-2">
-                    <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
-                        Distribución de Horas Extras
-                    </h3>
-                    
-                    <div class="w-full h-8 flex rounded-xl overflow-hidden shadow-inner bg-slate-100 mb-4">
-                        ${pct50 > 0 ? `<div style="width: ${pct50}%" class="bg-blue-500 hover:opacity-90 transition-all duration-1000"></div>` : ''}
-                        ${pct100 > 0 ? `<div style="width: ${pct100}%" class="bg-violet-500 hover:opacity-90 transition-all duration-1000 border-l border-white/20"></div>` : ''}
-                        ${pctFer > 0 ? `<div style="width: ${pctFer}%" class="bg-emerald-500 hover:opacity-90 transition-all duration-1000 border-l border-white/20"></div>` : ''}
+                    <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2">Distribución de Horas Extras</h3>
+                    <div class="w-full h-8 flex rounded-xl overflow-hidden bg-slate-100 mb-4">
+                        <div style="width: ${pct50}%" class="bg-blue-500"></div><div style="width: ${pct100}%" class="bg-violet-500"></div><div style="width: ${pctFer}%" class="bg-emerald-500"></div>
                     </div>
-                    
-                    <div class="grid grid-cols-3 gap-4 mt-2">
-                        <div>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-500"></span> Al 50%</p>
-                            <p class="text-xl font-black text-slate-700 mt-1">${sum50.toFixed(1)} hs <span class="text-xs font-semibold text-slate-400">(${pct50}%)</span></p>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-violet-500"></span> Al 100%</p>
-                            <p class="text-xl font-black text-slate-700 mt-1">${sum100.toFixed(1)} hs <span class="text-xs font-semibold text-slate-400">(${pct100}%)</span></p>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500"></span> Feriado</p>
-                            <p class="text-xl font-black text-slate-700 mt-1">${sumFer.toFixed(1)} hs <span class="text-xs font-semibold text-slate-400">(${pctFer}%)</span></p>
-                        </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><p class="text-[10px] font-bold text-slate-400">AL 50%</p><p class="text-xl font-black">${sum50.toFixed(1)} hs</p></div>
+                        <div><p class="text-[10px] font-bold text-slate-400">AL 100%</p><p class="text-xl font-black">${sum100.toFixed(1)} hs</p></div>
+                        <div><p class="text-[10px] font-bold text-slate-400">FERIADO</p><p class="text-xl font-black">${sumFer.toFixed(1)} hs</p></div>
                     </div>
                 </div>
-
-                <!-- Top Empleados Card -->
-                <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 flex flex-col h-full">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <span class="p-2 bg-amber-50 text-amber-500 rounded-lg">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                        </span>
-                        Top 5 Horas Extras
-                    </h3>
-                    <div class="flex-1 flex flex-col gap-1 mt-2">
-                        ${topHtml || '<p class="text-sm text-slate-400 italic">No hay horas registradas.</p>'}
-                    </div>
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 h-full">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">Top 5 Horas Extras</h3>
+                    <div class="flex flex-col gap-1">${topHtml || 'No hay datos'}</div>
                 </div>
-
-                <!-- Ranking Errores Card -->
-                <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 flex flex-col h-full">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                        Empleados con más problemas
-                    </h3>
-                    <div class="flex-1 flex flex-col mt-2">
-                        ${problemsHtml}
-                    </div>
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 h-full">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">Estado del equipo</h3>
+                    <p class="text-sm text-slate-500 italic">Analizando periodos...</p>
                 </div>
             `;
             analyticsContainer.style.display = 'grid';
         }
+    } catch (err) {
+        console.error("[UI] Error en render:", err);
     }
-} catch (err) {
-    console.error("[UI] ERROR en renderRegistros:", err);
-    showError("Ocurrió un error al procesar los datos para el Dashboard.");
-}
 }
 
 export function renderEmpleadoData(registros) {
