@@ -33,10 +33,22 @@ async function init() {
     const selectMes = document.getElementById("select-mes");
     const selectAnio = document.getElementById("select-anio");
 
-    // Set mes actual por defecto
+    // Set Todo el año por defecto
     const hoy = new Date();
-    selectMes.value = hoy.getMonth();
+    selectMes.value = "all";
     selectAnio.value = hoy.getFullYear();
+
+    // Lógica para mostrar/ocultar inputs de fechas custom
+    const customDatesContainer = document.getElementById("custom-dates-container");
+    selectMes.addEventListener("change", (e) => {
+        if (e.target.value === "custom") {
+            customDatesContainer.style.display = "flex";
+            selectAnio.style.display = "none";
+        } else {
+            customDatesContainer.style.display = "none";
+            selectAnio.style.display = "block";
+        }
+    });
 
     btn.addEventListener("click", () => renderStats());
 
@@ -102,7 +114,7 @@ function initBulkUI() {
 
 // ── Fetch + procesamiento ──────────────────────────────────
 async function renderStats() {
-    const mes = parseInt(document.getElementById("select-mes").value);
+    const mes = document.getElementById("select-mes").value;
     const anio = parseInt(document.getElementById("select-anio").value);
 
     const loading = document.getElementById("stats-loading");
@@ -116,9 +128,25 @@ async function renderStats() {
     if (filtrosBar) filtrosBar.style.display = "none";
 
     // Calcular rango de fechas
-    const fechaDesde = `${anio}-${String(mes + 1).padStart(2, '0')}-01`;
-    const ultimoDia = new Date(anio, mes + 1, 0).getDate();
-    const fechaHasta = `${anio}-${String(mes + 1).padStart(2, '0')}-${ultimoDia}`;
+    let fechaDesde, fechaHasta;
+
+    if (mes === "custom") {
+        fechaDesde = document.getElementById("date-desde").value;
+        fechaHasta = document.getElementById("date-hasta").value;
+        if (!fechaDesde || !fechaHasta) {
+            alert("Por favor selecciona las fechas Desde y Hasta.");
+            loading.style.display = "none";
+            return;
+        }
+    } else if (mes === "all") {
+        fechaDesde = `${anio}-01-01`;
+        fechaHasta = `${anio}-12-31`;
+    } else {
+        const m = parseInt(mes);
+        fechaDesde = `${anio}-${String(m + 1).padStart(2, '0')}-01`;
+        const ultimoDia = new Date(anio, m + 1, 0).getDate();
+        fechaHasta = `${anio}-${String(m + 1).padStart(2, '0')}-${ultimoDia}`;
+    }
 
     const res = await obtenerRegistros({ fechaDesde, fechaHasta });
     _configCache = getConfigRRHH();
