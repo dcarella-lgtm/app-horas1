@@ -355,9 +355,10 @@ export function renderEmpleadoData(registros) {
             if (hasDiff || (diaInt === 0 && Number(r.horas_50_manager || 0) > 0)) {
                 rowLevel = 'error';
                 __empRowErrors++;
-            } else if ((isNoActivity && !r.ausencias && !isWeekend) || (isFeriado && Number(r.horas_feriado_manager || 0) === 0 && !isNoActivity)) {
+            } else if ((isNoActivity && !r.ausencias && !isWeekend && !isFeriado) || (isFeriado && Number(r.horas_feriado_manager || 0) === 0 && !isNoActivity)) {
                 rowLevel = 'warning';
                 __empRowWarnings++;
+
             }
 
             const tdFirstClass = rowLevel === 'error' ? 'border-l-4 border-red-500' : rowLevel === 'warning' ? 'border-l-4 border-amber-500' : 'border-l-4 border-transparent';
