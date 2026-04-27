@@ -351,14 +351,32 @@ export function renderEmpleadoData(registros) {
             const diffFer = Number(r.horas_feriado_auto || 0) !== Number(r.horas_feriado_manager || 0);
             const hasDiff = diff50 || diff100 || diffFer;
             
-            let rowLevel = 'ok';
-            if (hasDiff || (diaInt === 0 && Number(r.horas_50_manager || 0) > 0)) {
-                rowLevel = 'error';
-                __empRowErrors++;
-            } else if ((isNoActivity && !r.ausencias && !isWeekend && !isFeriado) || (isFeriado && Number(r.horas_feriado_manager || 0) === 0 && !isNoActivity)) {
-                rowLevel = 'warning';
-                __empRowWarnings++;
+            const isMissingPunch = (actIngreso && !actSalida) || (!actIngreso && actSalida);
 
+            let rowLevel = 'ok';
+            let errorReason = '';
+            let warningReason = '';
+
+            if (isMissingPunch) {
+                rowLevel = 'error';
+                errorReason = 'Fichada Incompleta';
+                __empRowErrors++;
+            } else if (diaInt === 0 && Number(r.horas_50_manager || 0) > 0) {
+                rowLevel = 'error';
+                errorReason = 'Horas al 50% en Domingo';
+                __empRowErrors++;
+            } else if (hasDiff) {
+                rowLevel = 'warning';
+                warningReason = 'Modificado por Mánager';
+                __empRowWarnings++;
+            } else if ((isNoActivity && !r.ausencias && !isWeekend && !isFeriado)) {
+                rowLevel = 'warning';
+                warningReason = 'Ausencia sin justificar';
+                __empRowWarnings++;
+            } else if (isFeriado && Number(r.horas_feriado_manager || 0) === 0 && !isNoActivity) {
+                rowLevel = 'warning';
+                warningReason = 'Feriado sin horas';
+                __empRowWarnings++;
             }
 
             const tdFirstClass = rowLevel === 'error' ? 'border-l-4 border-red-500' : rowLevel === 'warning' ? 'border-l-4 border-amber-500' : 'border-l-4 border-transparent';
@@ -371,7 +389,7 @@ export function renderEmpleadoData(registros) {
                 if (rowLevel === 'error') {
                     bgClass = isDiff ? 'bg-white border-2 border-red-500 text-red-700 shadow-md ring-2 ring-red-100' : 'bg-white/60 border border-red-200 text-red-900/50 hover:bg-white';
                 } else if (rowLevel === 'warning') {
-                    bgClass = 'bg-white border-2 border-amber-400 text-amber-900 shadow-md ring-4 ring-amber-100/50 placeholder-amber-300';
+                    bgClass = isDiff ? 'bg-white border-2 border-amber-500 text-amber-800 shadow-md ring-2 ring-amber-200' : 'bg-white border-2 border-amber-300 text-amber-900 shadow-sm placeholder-amber-300';
                 }
 
                 return `<input type="number" step="0.5" class="edit-input w-full rounded-lg px-2 py-1.5 text-center font-black focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${bgClass} ${disabled}" 
@@ -404,8 +422,8 @@ export function renderEmpleadoData(registros) {
                 <td class="px-4 py-3 align-top">
                     <input type="text" class="edit-input w-full bg-transparent border-none text-xs text-slate-600 focus:bg-white focus:ring-1 focus:ring-slate-200 p-1 rounded ${isDisabled ? 'disabled' : ''}" 
                            data-id="${r.id}" data-field="comentarios" placeholder="Agregar comentario..." value="${r.comentarios || ''}">
-                    ${rowLevel === 'error' ? '<p class="text-[10px] text-red-500 font-bold mt-1 uppercase">⚠ Error de cálculo</p>' : 
-                      rowLevel === 'warning' ? '<p class="text-[10px] text-amber-600 font-bold mt-1 uppercase">⚠ Requiere revisión</p>' : ''}
+                    ${rowLevel === 'error' ? `<p class="text-[10px] text-red-500 font-bold mt-1 uppercase">⚠ ${errorReason}</p>` : 
+                      rowLevel === 'warning' ? `<p class="text-[10px] text-amber-600 font-bold mt-1 uppercase">⚠ ${warningReason}</p>` : ''}
                 </td>
             `;
             weekTbody.appendChild(tr);

@@ -87,10 +87,9 @@
             </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="bg-white p-5 rounded-lg border border-red-100 shadow-sm border-l-4 border-l-red-500">
-                    <h4 class="font-bold text-red-700 flex items-center gap-2 mb-3"><span class="text-xl">🔴</span> Error Crítico</h4>
+                    <h4 class="font-bold text-red-700 flex items-center gap-2 mb-3"><span class="text-xl">🔴</span> Error Crítico (Bloquea la aprobación)</h4>
                     <ul class="text-sm text-slate-600 space-y-2 list-disc list-inside">
                         <li>Fichadas incompletas (falta ingreso o salida).</li>
-                        <li>Diferencia de cálculo entre las horas sugeridas por el sistema y las del mánager.</li>
                         <li>Horas extra cargadas un día Domingo (requiere revisión especial de RRHH).</li>
                         <li>El estado del periodo fue marcado manualmente como "Rechazado".</li>
                     </ul>
@@ -98,8 +97,9 @@
                 <div class="bg-white p-5 rounded-lg border border-amber-100 shadow-sm border-l-4 border-l-amber-500">
                     <h4 class="font-bold text-amber-700 flex items-center gap-2 mb-3"><span class="text-xl">🟡</span> Advertencia / Revisión</h4>
                     <ul class="text-sm text-slate-600 space-y-2 list-disc list-inside">
+                        <li>Diferencia de cálculo: El Mánager sobrescribió manualmente las horas sugeridas por el sistema.</li>
                         <li>Es un día Feriado en el calendario, pero no hay horas cargadas en la columna de Feriado.</li>
-                        <li>Día sin actividad de fichada, pero con algo escrito en la columna "Ausencias" (requiere verificar si la justificación es válida).</li>
+                        <li>Ausencia sin justificar: Día de semana sin actividad de fichada y sin justificación en la columna "Ausencias".</li>
                         <li>El estado del periodo fue marcado manualmente como "En Revisión".</li>
                     </ul>
                 </div>
