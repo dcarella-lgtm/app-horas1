@@ -109,7 +109,6 @@ export function agruparPorSemana(registros) {
 
 export function renderRegistros(registros) {
     const grid = document.getElementById('registros-grid');
-    if (!grid) return; 
     
     if (!registros || registros.length === 0) {
         showEmpty(false);
