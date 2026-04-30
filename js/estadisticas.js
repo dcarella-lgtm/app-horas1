@@ -301,7 +301,7 @@ function aplicarModoSupervisor() {
 }
 
 // ── Render de tabla con filtros aplicados ───────────────────
-function renderTabla() {
+async function renderTabla() {
     const table = document.getElementById("stats-table");
     const empty = document.getElementById("stats-empty");
     const tbody = document.getElementById("stats-tbody");
@@ -310,8 +310,8 @@ function renderTabla() {
     tbody.innerHTML = "";
     
     // Forzar carga desde window
-    const listaSup = (window.cargarListaSupervisores) ? window.cargarListaSupervisores() : ["Error"];
-    const listaEq = (window.cargarListaEquipos) ? window.cargarListaEquipos() : ["Error"];
+    const listaSup = (window.cargarListaSupervisores) ? await window.cargarListaSupervisores() : [];
+    const listaEq = (window.cargarListaEquipos) ? await window.cargarListaEquipos() : [];
     
     console.log("[DEBUG_LISTA] Supervisores:", listaSup);
     console.log("[DEBUG_LISTA] Equipos:", listaEq);
@@ -384,13 +384,19 @@ function renderTabla() {
         const eqActual = asig ? asig.equipo : '';
 
         // Generar options para supervisor
+        let finalSups = [...listaSup];
+        if (supActual && !finalSups.includes(supActual)) finalSups.push(supActual);
+        
         const supOptions = ['<option value="">-</option>']
-            .concat(listaSup.map(s => `<option value="${s}"${s === supActual ? ' selected' : ''}>${s}</option>`))
+            .concat(finalSups.map(s => `<option value="${s}"${s === supActual ? ' selected' : ''}>${s}</option>`))
             .join('');
 
         // Generar options para equipo
+        let finalEqs = [...listaEq];
+        if (eqActual && !finalEqs.includes(eqActual)) finalEqs.push(eqActual);
+
         const eqOptions = ['<option value="">-</option>']
-            .concat(listaEq.map(e => `<option value="${e}"${e === eqActual ? ' selected' : ''}>${e}</option>`))
+            .concat(finalEqs.map(e => `<option value="${e}"${e === eqActual ? ' selected' : ''}>${e}</option>`))
             .join('');
 
         tr.innerHTML = `

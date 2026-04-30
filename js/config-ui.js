@@ -233,7 +233,7 @@ async function initSupervisoresUI() {
     await sincronizarListasMaestras(); // Asegurar datos frescos
     renderListaSupervisores();
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const input = document.getElementById("input-supervisor");
         const nombre = input.value.trim();
@@ -243,8 +243,11 @@ async function initSupervisoresUI() {
         if (!lista.includes(nombre)) {
             lista.push(nombre);
             lista.sort();
-            await guardarListaSupervisores(lista);
-            renderListaSupervisores();
+            const cargarYMostrar = async () => {
+                await guardarListaSupervisores(lista);
+                renderListaSupervisores();
+            };
+            cargarYMostrar();
         }
         input.value = "";
     });
@@ -275,7 +278,7 @@ function renderListaSupervisores() {
     });
 
     ul.querySelectorAll(".btn-del-sup").forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
             const nombre = btn.dataset.nombre;
             if (confirm(`¿Eliminar al supervisor "${nombre}"?`)) {
                 let lista = cargarListaSupervisores();
@@ -294,7 +297,7 @@ async function initEquiposUI() {
 
     renderListaEquipos();
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const input = document.getElementById("input-equipo");
         const nombre = input.value.trim();
@@ -336,7 +339,7 @@ function renderListaEquipos() {
     });
 
     ul.querySelectorAll(".btn-del-eq").forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
             const nombre = btn.dataset.nombre;
             if (confirm(`¿Eliminar el equipo "${nombre}"?`)) {
                 let lista = cargarListaEquipos();
