@@ -7,25 +7,21 @@
 
 var STORAGE_KEY = "asignaciones";
 
-/**
- * Carga las listas maestras desde Supabase y las guarda en LocalStorage.
- */
+let masterSupervisores = [];
+let masterEquipos = [];
+
 window.sincronizarListasMaestras = async function() {
     console.log("[Asignaciones] Sincronizando listas maestras...");
     try {
         const res = await window.obtenerListasDB();
-        if (res.ok && res.data && res.data.length > 0) {
-            res.data.forEach(item => {
-                if (item.id === 'supervisores' && Array.isArray(item.valores)) {
-                    localStorage.setItem("lista_supervisores", JSON.stringify(item.valores));
-                }
-                if (item.id === 'equipos' && Array.isArray(item.valores)) {
-                    localStorage.setItem("lista_equipos", JSON.stringify(item.valores));
-                }
-            });
-            console.log("[Asignaciones] Listas maestras sincronizadas con éxito.");
-        } else {
-            console.warn("[Asignaciones] No se recibieron listas de DB, usando locales.");
+        if (res.ok && res.data) {
+            const sups = res.data.find(i => i.id === 'supervisores');
+            const eqs = res.data.find(i => i.id === 'equipos');
+            
+            masterSupervisores = (sups && Array.isArray(sups.valores)) ? sups.valores : [];
+            masterEquipos = (eqs && Array.isArray(eqs.valores)) ? eqs.valores : [];
+            
+            console.log("[Asignaciones] Listas maestras sincronizadas:", masterSupervisores.length, "supervisores");
         }
     } catch (e) {
         console.error("[Asignaciones] Error crítico en sincronización:", e);
@@ -33,30 +29,20 @@ window.sincronizarListasMaestras = async function() {
 }
 
 window.cargarListaSupervisores = function() {
-    try {
-        var raw = localStorage.getItem("lista_supervisores");
-        var lista = raw ? JSON.parse(raw) : null;
-        if (Array.isArray(lista) && lista.length > 0) return lista;
-    } catch(e) {}
-    return []; // Sin datos
+    return masterSupervisores;
 }
 
 window.guardarListaSupervisores = async function(lista) {
-    localStorage.setItem("lista_supervisores", JSON.stringify(lista));
+    masterSupervisores = lista;
     if (window.guardarListasDB) await window.guardarListasDB('supervisores', lista);
 }
 
 window.cargarListaEquipos = function() {
-    try {
-        var raw = localStorage.getItem("lista_equipos");
-        var lista = raw ? JSON.parse(raw) : null;
-        if (Array.isArray(lista) && lista.length > 0) return lista;
-    } catch(e) {}
-    return []; // Sin datos
+    return masterEquipos;
 }
 
 window.guardarListaEquipos = async function(lista) {
-    localStorage.setItem("lista_equipos", JSON.stringify(lista));
+    masterEquipos = lista;
     if (window.guardarListasDB) await window.guardarListasDB('equipos', lista);
 }
 
