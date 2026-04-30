@@ -38,7 +38,7 @@ window.cargarListaSupervisores = function() {
         var lista = raw ? JSON.parse(raw) : null;
         if (Array.isArray(lista) && lista.length > 0) return lista;
     } catch(e) {}
-    return ["Juan", "María", "Pedro"]; // Emergencia
+    return []; // Sin datos
 }
 
 window.guardarListaSupervisores = async function(lista) {
@@ -52,7 +52,7 @@ window.cargarListaEquipos = function() {
         var lista = raw ? JSON.parse(raw) : null;
         if (Array.isArray(lista) && lista.length > 0) return lista;
     } catch(e) {}
-    return ["Líquidos", "Sólidos", "Logística"]; // Emergencia
+    return []; // Sin datos
 }
 
 window.guardarListaEquipos = async function(lista) {

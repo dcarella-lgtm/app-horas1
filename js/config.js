@@ -3,8 +3,6 @@
  * Aquí se definen los feriados y otras variables de negocio.
  */
 
-// import { obtenerFeriadosDB, obtenerConfigRRHH } from "./api.js";
-
 // Lista de feriados nacionales Argentina 2026 (Backup estático)
 const FERIADOS_ESTATICOS = {
     "2026-01-01": "Año Nuevo",
@@ -53,81 +51,50 @@ window.inicializarConfiguracion = async function() {
 }
 
 async function cargarFeriados() {
+    if (typeof window.obtenerFeriadosDB !== "function") return;
     try {
-        const res = await obtenerFeriadosDB();
+        const res = await window.obtenerFeriadosDB();
         if (res.ok && res.data) {
             const nuevos = {};
-            res.data.forEach(f => {
-                nuevos[f.fecha] = f.nombre;
-            });
+            res.data.forEach(f => { nuevos[f.fecha] = f.nombre; });
             FERIADOS_DINAMICOS = nuevos;
             console.log("[Config] Feriados sincronizados");
         }
-    } catch (err) {
-        console.warn("[Config] No se pudo cargar feriados de DB.");
-    }
+    } catch (err) { console.warn("[Config] No se pudo cargar feriados de DB."); }
 }
 
 async function cargarConfigRRHH() {
+    if (typeof window.obtenerConfigRRHH !== "function") return;
     try {
-        const res = await obtenerConfigRRHH();
+        const res = await window.obtenerConfigRRHH();
         if (res.ok && res.data) {
             CONFIG_RRHH_CACHE = res.data;
             console.log("[Config] Configuración RRHH sincronizada");
         }
-    } catch (err) {
-        console.warn("[Config] No se pudo cargar config RRHH.");
-    }
+    } catch (err) { console.warn("[Config] No se pudo cargar config RRHH."); }
 }
 
-/**
- * Verifica si una fecha es feriado y retorna su nombre.
- */
 window.getDetalleFeriado = function(fechaStr) {
     if (!fechaStr) return null;
-    
-    // Prioridad 1: Base de datos (Dinamicos)
     const dinamico = FERIADOS_DINAMICOS[fechaStr];
-    
-    // Si en la DB está marcado como __LABORABLE__, significa que se desactivó el feriado nacional
     if (dinamico === "__LABORABLE__") return null;
-    
-    // Si tiene un nombre real en la DB, aplicar ese
     if (dinamico) return dinamico;
-
-    // Prioridad 2: Backup estático
     return FERIADOS_ESTATICOS[fechaStr] || null;
 }
 
-window.getConfigRRHH = function() {
+window.obtenerConfiguracion = function() {
     return CONFIG_RRHH_CACHE;
 }
 
-/**
- * Analiza un registro para determinar si es una ausencia o una demora
- */
 window.analizarTipoEvento = function(registro) {
     const aus = String(registro.ausencias || "").toLowerCase();
     if (!aus || aus.trim() === "") return { tipo: 'ok', detalle: '' };
-
-    const config = getConfigRRHH();
-    const keywords = (config.palabras_clave_demora || "").split(",").map(k => k.trim().toLowerCase());
+    const keywords = (CONFIG_RRHH_CACHE.palabras_clave_demora || "").split(",").map(k => k.trim().toLowerCase());
     const esDemora = keywords.some(k => k && aus.includes(k));
-    
-    // Si tiene fichada de ingreso, NO es una ausencia independientemente del comentario
     const tieneActividad = registro.hora_ingreso !== null && registro.hora_ingreso !== 0 && registro.hora_ingreso !== "";
-    
     if (tieneActividad) {
-        // Podría ser una demora si el comentario coincide con las palabras clave
         if (esDemora) return { tipo: 'demora', detalle: registro.ausencias };
         return { tipo: 'ok', detalle: '' };
     }
-
-    if (esDemora) {
-        return { tipo: 'demora', detalle: registro.ausencias };
-    } else {
-        return { tipo: 'ausencia', detalle: registro.ausencias };
-    }
+    return esDemora ? { tipo: 'demora', detalle: registro.ausencias } : { tipo: 'ausencia', detalle: registro.ausencias };
 }
-
-const FERIADOS = FERIADOS_ESTATICOS;
