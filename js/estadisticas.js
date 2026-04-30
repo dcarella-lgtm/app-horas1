@@ -594,7 +594,7 @@ function aplicarAsignacionMasiva() {
     const equipo = document.getElementById("bulk-equipo").value;
 
     if (!supervisor && !equipo) {
-        alert("Por favor seleccioná un supervisor o equipo para asignar.");
+        showToast("Seleccioná un supervisor o equipo para asignar.", "info");
         return;
     }
 
@@ -619,7 +619,7 @@ function aplicarAsignacionMasiva() {
             poblarFiltros();
             poblarSelectorSupervisor();
             
-            alert("Asignación masiva completada.");
+            showToast("Asignación masiva completada.", "success");
         });
     }
 }

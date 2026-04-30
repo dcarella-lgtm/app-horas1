@@ -154,27 +154,62 @@ main {
 .badge.rechazado { background-color: #f8d7da; color: #842029; }
 .badge.revision { background-color: #fff3cd; color: #664d03; }
 
-/* Ajustes Responsive Finales */
-@media (max-width: 768px) {
-    body { font-size: 14px; }
-    main { padding: 1rem !important; }
-    .max-w-7xl { padding: 0 !important; }
-    
-    /* Evitar zoom en iOS y mejorar toque */
-    input, select, textarea {
-        font-size: 16px !important; 
-        min-height: 44px;
-    }
-    
-    /* Adaptar botones */
-    button { min-height: 44px; }
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-/* Scrollbar sutil para contenedores con overflow */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Sistema de Toasts */
+#toast-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.toast {
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    items-center: center;
+    gap: 0.75rem;
+    border-left: 4px solid #cbd5e1;
+    min-width: 300px;
+    pointer-events: auto;
+    animation: slideInRight 0.3s ease-out forwards;
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.toast.success { border-left-color: #10b981; }
+.toast.error { border-left-color: #ef4444; }
+.toast.info { border-left-color: #3b82f6; }
+
+@media (max-width: 768px) {
+    #toast-container {
+        bottom: 1rem;
+        left: 1rem;
+        right: 1rem;
+        width: calc(100% - 2rem);
+    }
+    .toast {
+        min-width: 0;
+    }
+}
 
 /* Ajustes de Inputs para Mobile */
 input[type="date"], input[type="text"], input[type="number"], select {

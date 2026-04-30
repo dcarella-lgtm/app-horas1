@@ -45,9 +45,9 @@ async function initConfigUI() {
             if (window.guardarConfigRRHH) {
                 const res = await window.guardarConfigRRHH(config);
                 if (res && res.ok) {
-                    alert("Configuración RRHH guardada correctamente.");
+                    showToast("Configuración RRHH guardada correctamente.", "success");
                 } else {
-                    alert("Error al guardar configuración.");
+                    showToast("Error al guardar configuración.", "error");
                 }
             }
         });

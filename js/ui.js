@@ -37,6 +37,37 @@ function toggleStates(prefix, state) {
     }
 }
 
+// --- Sistema de Notificaciones Toast ---
+window.showToast = function(message, type = 'info') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icons = {
+        success: '<svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>',
+        error: '<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>',
+        info: '<svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+    };
+
+    toast.innerHTML = `
+        ${icons[type] || icons.info}
+        <span class="text-sm font-bold text-slate-700">${message}</span>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'slideInRight 0.3s ease-out reverse forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
 // Convertidor de decimal de Excel (0-1) a formato HH:mm
 function convertirHoraDecimal(valor) {
     if (valor === null || valor === undefined || valor === "" || valor === 0) return "-";
