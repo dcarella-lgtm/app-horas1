@@ -26,6 +26,9 @@ const FERIADOS_ESTATICOS = {
     "2026-09-21": "Día del Trabajador Perfumista"
 };
 
+// Exponer para que config-ui.js pueda renderizar la lista
+window.FERIADOS_ESTATICOS = FERIADOS_ESTATICOS;
+
 // Cache para configuración
 let FERIADOS_DINAMICOS = {};
 let CONFIG_RRHH_CACHE = {
@@ -62,6 +65,7 @@ async function cargarFeriados() {
         }
     } catch (err) { console.warn("[Config] No se pudo cargar feriados de DB."); }
 }
+window.cargarFeriados = cargarFeriados;
 
 async function cargarConfigRRHH() {
     if (typeof window.obtenerConfigRRHH !== "function") return;

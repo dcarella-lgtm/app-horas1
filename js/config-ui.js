@@ -4,8 +4,10 @@
 async function initConfigUI() {
     console.log("[ConfigUI] Iniciando...");
 
-    // 1. Feriados estáticos (UI inicial)
-    if (typeof window.renderStaticFeriados === "function") window.renderStaticFeriados();
+    // 1. Feriados
+    renderStaticFeriados();
+    await refreshFeriadosList();
+    initFeriadoForm();
 
     // 2. Cargar parámetros generales de RRHH
     try {
@@ -171,6 +173,109 @@ async function renderListaEquipos() {
                 await renderListaEquipos();
             }
         };
+    });
+}
+
+// ── Gestión de Feriados ────────────────────────────────────
+function renderStaticFeriados() {
+    const container = document.getElementById("static-feriados-list");
+    if (!container) return;
+
+    const feriados = window.FERIADOS_ESTATICOS || {};
+    const fechas = Object.keys(feriados).sort();
+
+    if (fechas.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-500">No hay feriados estáticos definidos.</p>';
+        return;
+    }
+
+    container.innerHTML = fechas.map(fecha => {
+        const nombre = feriados[fecha];
+        const [y, m, d] = fecha.split('-');
+        const fechaDisplay = d + '/' + m + '/' + y;
+        return '<div class="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">'
+            + '<div><span class="text-sm font-semibold text-gray-700">' + fechaDisplay + '</span>'
+            + '<span class="text-sm text-gray-500 ml-2">' + nombre + '</span></div>'
+            + '<span class="text-xs text-green-600 font-bold">Activo</span>'
+            + '</div>';
+    }).join('');
+}
+window.renderStaticFeriados = renderStaticFeriados;
+
+async function refreshFeriadosList() {
+    const loading = document.getElementById("config-loading");
+    const table = document.getElementById("feriados-table");
+    const tbody = document.getElementById("feriados-tbody");
+    const noMsg = document.getElementById("no-feriados-msg");
+
+    if (!tbody) return;
+
+    try {
+        const res = await window.obtenerFeriadosDB();
+        if (loading) loading.style.display = "none";
+
+        if (res.ok && res.data && res.data.length > 0) {
+            tbody.innerHTML = "";
+            if (table) table.style.display = "table";
+            if (noMsg) noMsg.style.display = "none";
+
+            res.data.forEach(f => {
+                if (f.nombre === "__LABORABLE__") return;
+                const tr = document.createElement("tr");
+                const [y, m, d] = (f.fecha || '').split('-');
+                tr.innerHTML = '<td style="padding: 10px;">' + (d + '/' + m + '/' + y) + '</td>'
+                    + '<td style="padding: 10px;">' + f.nombre + '</td>'
+                    + '<td style="padding: 10px; text-align: center;">'
+                    + '<button class="btn-del-feriado text-red-500 hover:text-red-700" data-id="' + f.id + '" title="Eliminar">'
+                    + '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>'
+                    + '</button></td>';
+                tbody.appendChild(tr);
+            });
+
+            tbody.querySelectorAll(".btn-del-feriado").forEach(btn => {
+                btn.onclick = async () => {
+                    const id = btn.dataset.id;
+                    if (confirm('¿Eliminar este feriado personalizado?')) {
+                        await window.eliminarFeriadoDB(id);
+                        await window.cargarFeriados();
+                        await refreshFeriadosList();
+                    }
+                };
+            });
+        } else {
+            if (table) table.style.display = "none";
+            if (noMsg) noMsg.style.display = "block";
+        }
+    } catch (e) {
+        console.error("[ConfigUI] Error cargando feriados:", e);
+        if (loading) loading.style.display = "none";
+    }
+}
+window.refreshFeriadosList = refreshFeriadosList;
+
+function initFeriadoForm() {
+    const form = document.getElementById("form-feriado");
+    if (!form) return;
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fechaInput = document.getElementById("feriado-fecha");
+        const nombreInput = document.getElementById("feriado-nombre");
+        const fecha = fechaInput.value;
+        const nombre = nombreInput.value.trim();
+
+        if (!fecha || !nombre) return;
+
+        const res = await window.agregarFeriadoDB(fecha, nombre);
+        if (res.ok) {
+            fechaInput.value = "";
+            nombreInput.value = "";
+            await window.cargarFeriados();
+            await refreshFeriadosList();
+            renderStaticFeriados();
+        } else {
+            alert("Error al agregar feriado.");
+        }
     });
 }
 
