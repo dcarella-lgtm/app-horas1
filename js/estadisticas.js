@@ -154,7 +154,7 @@ async function renderStats() {
 
     const res = await obtenerRegistros({ fechaDesde, fechaHasta });
     await sincronizarListasMaestras(); // Sincronizar listas (Supervisores/Equipos)
-    _configCache = getConfigRRHH();
+    _configCache = window.obtenerConfiguracion ? window.obtenerConfiguracion() : (window.getConfigRRHH ? window.getConfigRRHH() : {});
     _asignacionesCache = await sincronizarAsignaciones();
 
     loading.style.display = "none";
@@ -462,7 +462,7 @@ function procesarDatos(data) {
         }
 
         const emp = result.empleados[r.legajo];
-        const analisis = analizarTipoEvento(r);
+        const analisis = window.analizarTipoEvento ? window.analizarTipoEvento(r) : { tipo: 'ok', detalle: '' };
 
         if (analisis.tipo === 'ausencia') {
             result.totalAusencias++;
