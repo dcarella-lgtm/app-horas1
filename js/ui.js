@@ -104,13 +104,11 @@ function agruparPorSemana(registros) {
         .reduce((obj, key) => {
             obj[key] = semanas[key];
             return obj;
-        }, {});
-}
-
-function renderRegistros(empleados) {
+     function renderRegistros(empleados) {
     console.log("[UI] Renderizando Dashboard...", empleados?.length);
     const kpiContainer = document.getElementById("kpi-container");
     const alertsContainer = document.getElementById("alerts-container");
+    const analyticsContainer = document.getElementById("analytics-container");
     
     if (!kpiContainer) return;
 
@@ -158,7 +156,7 @@ function renderRegistros(empleados) {
             <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group cursor-pointer" onclick="window.location.href='estadisticas.html'">
                 <div class="flex justify-between items-start mb-4">
                     <div class="p-3 bg-purple-50 rounded-2xl text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z"></path></svg>
                     </div>
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Feriados</span>
                 </div>
@@ -218,10 +216,49 @@ function renderRegistros(empleados) {
             }
         }
 
+        // --- RENDER DE ANALYTICS ---
+        if (analyticsContainer) {
+            const totalH = totalH50 + totalH100 + totalFeriado;
+            const pct50 = totalH > 0 ? (totalH50 / totalH * 100).toFixed(1) : 0;
+            const pct100 = totalH > 0 ? (totalH100 / totalH * 100).toFixed(1) : 0;
+            const pctFer = totalH > 0 ? (totalFeriado / totalH * 100).toFixed(1) : 0;
+
+            analyticsContainer.innerHTML = `
+                <div class="bg-white rounded-3xl shadow-sm p-8 border border-slate-100 lg:col-span-2">
+                    <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2">Distribución de Horas Extras</h3>
+                    <div class="w-full h-10 flex rounded-2xl overflow-hidden bg-slate-100 mb-6">
+                        <div style="width: ${pct50}%" class="bg-blue-500 shadow-inner"></div>
+                        <div style="width: ${pct100}%" class="bg-indigo-500 shadow-inner"></div>
+                        <div style="width: ${pctFer}%" class="bg-purple-500 shadow-inner"></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                            <div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">AL 50%</p><p class="text-xl font-black text-slate-800">${totalH50.toFixed(1)} hs</p></div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-indigo-500"></div>
+                            <div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">AL 100%</p><p class="text-xl font-black text-slate-800">${totalH100.toFixed(1)} hs</p></div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-purple-500"></div>
+                            <div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">FERIADOS</p><p class="text-xl font-black text-slate-800">${totalFeriado.toFixed(1)} hs</p></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            analyticsContainer.style.display = 'grid';
+        }
+
         toggleStates('', 'table');
 
     } catch (err) {
         console.error("[UI] Error renderizando dashboard:", err);
+    }
+}
+
+window.renderRegistros = renderRegistros;
+d:", err);
     }
 }
 
