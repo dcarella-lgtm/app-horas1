@@ -317,38 +317,41 @@ window.renderEmpleadoData = function(registros) {
                     bgClass = isDiff ? 'bg-white border-2 border-amber-500 text-amber-800 shadow-md ring-2 ring-amber-200' : 'bg-white border-2 border-amber-300 text-amber-900 shadow-sm placeholder-amber-300';
                 }
 
-                return \`<input type="number" step="0.5" class="edit-input w-full rounded-lg px-2 py-1.5 text-center font-black focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all \${bgClass} \${disabled}" \n                        data-id="\${r.id}" data-field="\${fieldId}" value="\${val || 0}">\`;
+                return `<input type="number" step="0.5" class="edit-input w-full rounded-lg px-2 py-1.5 text-center font-black focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${bgClass} ${disabled}" 
+                        data-id="${r.id}" data-field="${fieldId}" value="${val || 0}">`;
             };
 
-            const systemBadge = (val) => \`<span class="text-[9px] font-bold uppercase tracking-widest \${rowLevel === 'ok' ? 'text-slate-300' : 'text-slate-500'} block mb-1.5">Sist: \${val || 0}</span>\`;
+            const systemBadge = (val) => `<span class="text-[9px] font-bold uppercase tracking-widest ${rowLevel === 'ok' ? 'text-slate-300' : 'text-slate-500'} block mb-1.5">Sist: ${val || 0}</span>`;
 
             tr.className = rowClass;
-            tr.innerHTML = \`
-                <td class="px-4 py-4 align-top \${tdFirstClass}">
+            tr.innerHTML = `
+                <td class="px-4 py-4 align-top ${tdFirstClass}">
                     <div class="flex flex-col">
-                        <span class="font-black text-slate-700 text-base leading-none">\${dias[diaInt]}</span>
-                        <span class="text-[10px] text-slate-500 font-bold tracking-widest mt-1">\${r.fecha.split('-').reverse().join('/')}</span>
-                        \${isFeriado ? \`<span class="mt-2 text-[9px] bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-bold uppercase w-fit shadow-sm">🎉 \${nombreFeriado}</span>\` : ''}
-                        \${r.ausencias ? \`<span class="mt-2 text-[9px] bg-amber-100 text-amber-800 px-2 py-1 rounded-md font-bold uppercase w-fit shadow-sm border border-amber-200">📋 \${r.ausencias}</span>\` : ''}
+                        <span class="font-black text-slate-700 text-base leading-none">${dias[diaInt]}</span>
+                        <span class="text-[10px] text-slate-500 font-bold tracking-widest mt-1">${r.fecha.split('-').reverse().join('/')}</span>
+                        ${isFeriado ? `<span class="mt-2 text-[9px] bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-bold uppercase w-fit shadow-sm">🎉 ${nombreFeriado}</span>` : ''}
+                        ${r.ausencias ? `<span class="mt-2 text-[9px] bg-amber-100 text-amber-800 px-2 py-1 rounded-md font-bold uppercase w-fit shadow-sm border border-amber-200">📋 ${r.ausencias}</span>` : ''}
                     </div>
                 </td>
-                <td class="px-4 py-4 text-center font-semibold text-slate-600 align-middle">\${actIngreso || '-'}</td>
-                <td class="px-4 py-4 text-center font-semibold text-slate-600 align-middle border-r border-slate-200/50">\${actSalida || '-'}</td>
-                <td class="px-4 py-4 text-center \${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle">
-                    \${systemBadge(r.horas_50_auto)} \${notionInput(r.horas_50_manager, 'horas_50_manager', diff50)}
+                <td class="px-4 py-4 text-center font-semibold text-slate-600 align-middle">${actIngreso || '-'}</td>
+                <td class="px-4 py-4 text-center font-semibold text-slate-600 align-middle border-r border-slate-200/50">${actSalida || '-'}</td>
+                <td class="px-4 py-4 text-center ${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle">
+                    ${systemBadge(r.horas_50_auto)} ${notionInput(r.horas_50_manager, 'horas_50_manager', diff50)}
                 </td>
-                <td class="px-4 py-4 text-center \${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle">
-                    \${systemBadge(r.horas_100_auto)} \${notionInput(r.horas_100_manager, 'horas_100_manager', diff100)}
+                <td class="px-4 py-4 text-center ${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle">
+                    ${systemBadge(r.horas_100_auto)} ${notionInput(r.horas_100_manager, 'horas_100_manager', diff100)}
                 </td>
-                <td class="px-4 py-4 text-center \${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle border-r border-slate-200/50">
-                    \${systemBadge(r.horas_feriado_auto)} \${notionInput(r.horas_feriado_manager, 'horas_feriado_manager', diffFer)}
+                <td class="px-4 py-4 text-center ${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle border-r border-slate-200/50">
+                    ${systemBadge(r.horas_feriado_auto)} ${notionInput(r.horas_feriado_manager, 'horas_feriado_manager', diffFer)}
                 </td>
 
                 <td class="px-4 py-3 align-top">
-                    <input type="text" class="edit-input w-full bg-transparent border-none text-xs text-slate-600 focus:bg-white focus:ring-1 focus:ring-slate-200 p-1 rounded \${isDisabled ? 'disabled' : ''}" \n                           data-id="\${r.id}" data-field="comentarios" placeholder="Agregar comentario..." value="\${r.comentarios || ''}">
-                    \${rowLevel === 'error' ? \`<p class="text-[10px] text-red-500 font-bold mt-1 uppercase">⚠ \${errorReason}</p>\` : \n                      rowLevel === 'warning' ? \`<p class="text-[10px] text-amber-600 font-bold mt-1 uppercase">⚠ \${warningReason}</p>\` : ''}
+                    <input type="text" class="edit-input w-full bg-transparent border-none text-xs text-slate-600 focus:bg-white focus:ring-1 focus:ring-slate-200 p-1 rounded ${isDisabled ? 'disabled' : ''}" 
+                           data-id="${r.id}" data-field="comentarios" placeholder="Agregar comentario..." value="${r.comentarios || ''}">
+                    ${rowLevel === 'error' ? `<p class="text-[10px] text-red-500 font-bold mt-1 uppercase">⚠ ${errorReason}</p>` : 
+                      rowLevel === 'warning' ? `<p class="text-[10px] text-amber-600 font-bold mt-1 uppercase">⚠ ${warningReason}</p>` : ''}
                 </td>
-            \`;
+            `;
             weekTbody.appendChild(tr);
         });
 
@@ -360,25 +363,25 @@ window.renderEmpleadoData = function(registros) {
     // Actualizar contadores
     const counterBadge = document.getElementById('empleado-status-counters');
     if (counterBadge) {
-        counterBadge.innerHTML = \`
-            <span class="inline-flex items-center gap-1.5 bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-red-100 \${__empRowErrors === 0 ? 'hidden' : ''}">
-                <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span> \${__empRowErrors} Error\${__empRowErrors>1?'es':''}
+        counterBadge.innerHTML = `
+            <span class="inline-flex items-center gap-1.5 bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-red-100 ${__empRowErrors === 0 ? 'hidden' : ''}">
+                <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span> ${__empRowErrors} Error${__empRowErrors>1?'es':''}
             </span>
-            <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-amber-100 \${__empRowWarnings === 0 ? 'hidden' : ''}">
-                <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span> \${__empRowWarnings} Advertencia\${__empRowWarnings>1?'s':''}
+            <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-amber-100 ${__empRowWarnings === 0 ? 'hidden' : ''}">
+                <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span> ${__empRowWarnings} Advertencia${__empRowWarnings>1?'s':''}
             </span>
-        \`;
+        `;
     }
 
     if (btnAprobar && !isDisabled) {
         if (__empRowErrors > 0) {
             btnAprobar.disabled = true;
             btnAprobar.className = "bg-slate-200 text-slate-400 px-5 py-2.5 rounded-lg font-bold cursor-not-allowed flex items-center gap-2";
-            btnAprobar.innerHTML = \`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> Resolver errores para aprobar\`;
+            btnAprobar.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> Resolver errores para aprobar`;
         } else {
             btnAprobar.disabled = false;
             btnAprobar.className = "bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-sm transition-all duration-150 ease-in-out flex items-center gap-2";
-            btnAprobar.innerHTML = \`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Aprobar Reporte\`;
+            btnAprobar.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Aprobar Reporte`;
         }
     }
 }
