@@ -301,7 +301,7 @@ function aplicarModoSupervisor() {
 }
 
 // ── Render de tabla con filtros aplicados ───────────────────
-async function renderTabla() {
+function renderTabla() {
     const table = document.getElementById("stats-table");
     const empty = document.getElementById("stats-empty");
     const tbody = document.getElementById("stats-tbody");
@@ -309,9 +309,9 @@ async function renderTabla() {
 
     tbody.innerHTML = "";
     
-    // Forzar carga desde window
-    const listaSup = (window.cargarListaSupervisores) ? await window.cargarListaSupervisores() : [];
-    const listaEq = (window.cargarListaEquipos) ? await window.cargarListaEquipos() : [];
+    // Leer listas maestras (ya sincronizadas por renderStats)
+    const listaSup = window.cargarListaSupervisores ? window.cargarListaSupervisores() : [];
+    const listaEq = window.cargarListaEquipos ? window.cargarListaEquipos() : [];
     
     console.log("[DEBUG_LISTA] Supervisores:", listaSup);
     console.log("[DEBUG_LISTA] Equipos:", listaEq);
