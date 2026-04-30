@@ -207,7 +207,21 @@ function agruparPorSemana(registros) {
             obj[key] = semanas[key];
             return obj;
         }, {});
+// Helper para detectar si estamos en móvil
+function esMobile() {
+    return window.innerWidth < 768;
 }
+
+// Escuchar cambios de tamaño para re-renderizar si es necesario
+window.addEventListener('resize', () => {
+    // Usamos una pequeña pausa para no saturar el render
+    clearTimeout(window.__resizeTimer);
+    window.__resizeTimer = setTimeout(() => {
+        if (window.__currentEmpleadoRecords && window.__currentEmpleadoRecords.length > 0) {
+            window.renderEmpleadoData(window.__currentEmpleadoRecords);
+        }
+    }, 250);
+});
 
 window.renderEmpleadoData = function(registros) {
     const container = document.getElementById('emp-semanas-container');
@@ -268,42 +282,56 @@ window.renderEmpleadoData = function(registros) {
         const firstDay = weekData.registros[0].fecha.split('-').reverse().join('/');
         const lastDay = weekData.registros[weekData.registros.length - 1].fecha.split('-').reverse().join('/');
         
-        weekBlock.innerHTML = `
-            <div class="bg-slate-50/50 px-6 py-3 border-bottom border-slate-100 flex justify-between items-center sticky top-0 z-10 backdrop-blur-sm">
-                <h3 class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wider">
-                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    Semana ${weekData.weekNo} <span class="text-slate-400 font-normal ml-2">(${firstDay} — ${lastDay})</span>
-                </h3>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm border-separate border-spacing-0">
-                    <thead>
-                        <tr class="bg-slate-50/30">
-                            <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Día / Fecha</th>
-                            <th class="px-4 py-2 text-center text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Entrada</th>
-                            <th class="px-4 py-2 text-center text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100 border-r border-slate-100">Salida</th>
-                            <th class="px-4 py-2 text-center text-[10px] font-bold text-blue-400 uppercase border-b border-slate-100 bg-blue-50/30">50%</th>
-                            <th class="px-4 py-2 text-center text-[10px] font-bold text-blue-400 uppercase border-b border-slate-100 bg-blue-50/30">100%</th>
-                            <th class="px-4 py-2 text-center text-[10px] font-bold text-blue-400 uppercase border-b border-slate-100 border-r border-slate-100 bg-blue-50/30">Feriado</th>
-                            <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Feedback Manager</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-50" id="tbody-${weekKey}"></tbody>
-                </table>
-            </div>
-        `;
+        const isMob = esMobile();
+
+        if (!isMob) {
+            // RENDER DESKTOP (TABLA)
+            weekBlock.innerHTML = `
+                <div class="bg-slate-50/50 px-6 py-3 border-bottom border-slate-100 flex justify-between items-center sticky top-0 z-10 backdrop-blur-sm">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wider">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Semana ${weekData.weekNo} <span class="text-slate-400 font-normal ml-2">(${firstDay} — ${lastDay})</span>
+                    </h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border-separate border-spacing-0">
+                        <thead>
+                            <tr class="bg-slate-50/30">
+                                <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Día / Fecha</th>
+                                <th class="px-4 py-2 text-center text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Entrada</th>
+                                <th class="px-4 py-2 text-center text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100 border-r border-slate-100">Salida</th>
+                                <th class="px-4 py-2 text-center text-[10px] font-bold text-blue-400 uppercase border-b border-slate-100 bg-blue-50/30">50%</th>
+                                <th class="px-4 py-2 text-center text-[10px] font-bold text-blue-400 uppercase border-b border-slate-100 bg-blue-50/30">100%</th>
+                                <th class="px-4 py-2 text-center text-[10px] font-bold text-blue-400 uppercase border-b border-slate-100 border-r border-slate-100 bg-blue-50/30">Feriado</th>
+                                <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Feedback Manager</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50" id="tbody-${weekKey}"></tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            // RENDER MOBILE (CARDS)
+            weekBlock.innerHTML = `
+                <div class="bg-slate-50/50 px-4 py-3 border-bottom border-slate-100 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2 text-xs uppercase tracking-wider">
+                        Semana ${weekData.weekNo} <span class="text-slate-400 font-normal ml-1">(${firstDay} — ${lastDay})</span>
+                    </h3>
+                </div>
+                <div class="flex flex-col divide-y divide-slate-100" id="cards-${weekKey}"></div>
+            `;
+        }
         
         const weekTbody = weekBlock.querySelector(`#tbody-${weekKey}`);
+        const weekCards = weekBlock.querySelector(`#cards-${weekKey}`);
         
         weekData.registros.forEach(r => {
-            const tr = document.createElement('tr');
-            
             // Lógica de fecha y feriado
             const temp = new Date(r.fecha + 'T12:00:00');
             const diaInt = temp.getDay();
             const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
             const isWeekend = diaInt === 0 || diaInt === 6;
-            // Manejar compatibilidad si getDetalleFeriado no está definido globalmente en este contexto
+            
             let nombreFeriado = null;
             if (typeof window.getDetalleFeriado === 'function') {
                 nombreFeriado = window.getDetalleFeriado(r.fecha);
@@ -324,7 +352,6 @@ window.renderEmpleadoData = function(registros) {
             const diff100 = Number(r.horas_100_auto || 0) !== Number(r.horas_100_manager || 0);
             const diffFer = Number(r.horas_feriado_auto || 0) !== Number(r.horas_feriado_manager || 0);
             const hasDiff = diff50 || diff100 || diffFer;
-            
             const isMissingPunch = (actIngreso && !actSalida) || (!actIngreso && actSalida);
 
             let rowLevel = 'ok';
@@ -336,89 +363,123 @@ window.renderEmpleadoData = function(registros) {
                 const evento = window.analizarTipoEvento(r);
                 isDemora = evento.tipo === 'demora';
             }
-
             const isAusenciaInvalida = !r.ausencias || r.ausencias.toUpperCase().includes('DETALLAR AUSENCIA');
 
             if (isMissingPunch) {
-                rowLevel = 'error';
-                errorReason = 'Fichada Incompleta';
-                __empRowErrors++;
+                rowLevel = 'error'; errorReason = 'Fichada Incompleta'; __empRowErrors++;
             } else if (diaInt === 0 && Number(r.horas_50_manager || 0) > 0) {
-                rowLevel = 'error';
-                errorReason = 'Horas al 50% en Domingo';
-                __empRowErrors++;
+                rowLevel = 'error'; errorReason = 'Horas al 50% en Domingo'; __empRowErrors++;
             } else if (hasDiff) {
-                rowLevel = 'warning';
-                warningReason = 'Modificado por Mánager';
-                __empRowWarnings++;
+                rowLevel = 'warning'; warningReason = 'Modificado por Mánager'; __empRowWarnings++;
             } else if (isDemora) {
-                rowLevel = 'warning';
-                warningReason = 'Demora / Menor Jornada';
-                __empRowWarnings++;
+                rowLevel = 'warning'; warningReason = 'Demora / Menor Jornada'; __empRowWarnings++;
             } else if (isNoActivity && isAusenciaInvalida && !isWeekend && !isFeriado) {
-                rowLevel = 'warning';
-                warningReason = 'Ausencia sin justificar';
-                __empRowWarnings++;
+                rowLevel = 'warning'; warningReason = 'Ausencia sin justificar'; __empRowWarnings++;
             } else if (isFeriado && Number(r.horas_feriado_manager || 0) === 0 && !isNoActivity) {
-                rowLevel = 'warning';
-                warningReason = 'Feriado sin horas';
-                __empRowWarnings++;
+                rowLevel = 'warning'; warningReason = 'Feriado sin horas'; __empRowWarnings++;
             } else if (isFeriado && (Number(r.horas_feriado_auto || 0) > 0 || Number(r.horas_feriado_manager || 0) > 0)) {
-                rowLevel = 'warning';
-                warningReason = 'Feriado Trabajado';
-                __empRowWarnings++;
+                rowLevel = 'warning'; warningReason = 'Feriado Trabajado'; __empRowWarnings++;
             }
 
             const tdFirstClass = rowLevel === 'error' ? 'border-l-4 border-red-500' : rowLevel === 'warning' ? 'border-l-4 border-amber-500' : 'border-l-4 border-transparent';
-            const rowClass = rowLevel === 'error' ? 'bg-red-50/80 text-slate-800' : rowLevel === 'warning' ? 'bg-amber-50/80 text-slate-800' : 'hover:bg-slate-50 transition-colors opacity-60 hover:opacity-100 grayscale hover:grayscale-0';
+            const rowClass = rowLevel === 'error' ? 'bg-red-50/80' : rowLevel === 'warning' ? 'bg-amber-50/80' : 'hover:bg-slate-50';
 
             const notionInput = (val, fieldId, isDiff = false) => {
                 const disabled = isDisabled ? 'disabled' : '';
-                let bgClass = 'bg-slate-100/50 border border-transparent text-slate-400 hover:bg-slate-200/50';
-                
+                let bgClass = 'bg-slate-100/50 border border-transparent text-slate-400';
                 if (rowLevel === 'error') {
-                    bgClass = isDiff ? 'bg-white border-2 border-red-500 text-red-700 shadow-md ring-2 ring-red-100' : 'bg-white/60 border border-red-200 text-red-900/50 hover:bg-white';
+                    bgClass = isDiff ? 'bg-white border-2 border-red-500 text-red-700 shadow-sm' : 'bg-white/60 border border-red-200 text-red-900/50';
                 } else if (rowLevel === 'warning') {
-                    bgClass = isDiff ? 'bg-white border-2 border-amber-500 text-amber-800 shadow-md ring-2 ring-amber-200' : 'bg-white border-2 border-amber-300 text-amber-900 shadow-sm placeholder-amber-300';
+                    bgClass = isDiff ? 'bg-white border-2 border-amber-500 text-amber-800 shadow-sm' : 'bg-white border-2 border-amber-300 text-amber-900 shadow-sm';
                 }
-
                 return `<input type="number" step="0.5" class="edit-input w-full rounded-lg px-2 py-1.5 text-center font-black focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${bgClass} ${disabled}" 
                         data-id="${r.id}" data-field="${fieldId}" value="${val || 0}">`;
             };
 
-            const systemBadge = (val) => `<span class="text-[9px] font-bold uppercase tracking-widest ${rowLevel === 'ok' ? 'text-slate-300' : 'text-slate-500'} block mb-1.5">Sist: ${val || 0}</span>`;
+            const systemBadge = (val) => `<span class="text-[9px] font-bold uppercase tracking-widest ${rowLevel === 'ok' ? 'text-slate-300' : 'text-slate-500'} block mb-1">Sist: ${val || 0}</span>`;
 
-            tr.className = rowClass;
-            tr.innerHTML = `
-                <td class="px-4 py-4 align-top ${tdFirstClass}">
-                    <div class="flex flex-col">
-                        <span class="font-black text-slate-700 text-base leading-none">${dias[diaInt]}</span>
-                        <span class="text-[10px] text-slate-500 font-bold tracking-widest mt-1">${r.fecha.split('-').reverse().join('/')}</span>
-                        ${isFeriado ? `<span class="mt-2 text-[9px] bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-bold uppercase w-fit shadow-sm">🎉 ${nombreFeriado}</span>` : ''}
-                        ${r.ausencias ? `<span class="mt-2 text-[9px] bg-amber-100 text-amber-800 px-2 py-1 rounded-md font-bold uppercase w-fit shadow-sm border border-amber-200">📋 ${r.ausencias}</span>` : ''}
+            if (!isMob) {
+                // TR (DESKTOP)
+                const tr = document.createElement('tr');
+                tr.className = rowClass + ' transition-colors';
+                tr.innerHTML = `
+                    <td class="px-4 py-4 align-top ${tdFirstClass}">
+                        <div class="flex flex-col">
+                            <span class="font-black text-slate-700 text-base leading-none">${dias[diaInt]}</span>
+                            <span class="text-[10px] text-slate-500 font-bold tracking-widest mt-1">${r.fecha.split('-').reverse().join('/')}</span>
+                            ${isFeriado ? `<span class="mt-2 text-[9px] bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-bold uppercase w-fit shadow-sm">🎉 ${nombreFeriado}</span>` : ''}
+                            ${r.ausencias ? `<span class="mt-2 text-[9px] bg-amber-100 text-amber-800 px-2 py-1 rounded-md font-bold uppercase w-fit shadow-sm border border-amber-200">📋 ${r.ausencias}</span>` : ''}
+                        </div>
+                    </td>
+                    <td class="px-4 py-4 text-center font-semibold text-slate-600 align-middle">${actIngreso || '-'}</td>
+                    <td class="px-4 py-4 text-center font-semibold text-slate-600 align-middle border-r border-slate-200/50">${actSalida || '-'}</td>
+                    <td class="px-4 py-4 text-center ${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle">
+                        ${systemBadge(r.horas_50_auto)} ${notionInput(r.horas_50_manager, 'horas_50_manager', diff50)}
+                    </td>
+                    <td class="px-4 py-4 text-center ${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle">
+                        ${systemBadge(r.horas_100_auto)} ${notionInput(r.horas_100_manager, 'horas_100_manager', diff100)}
+                    </td>
+                    <td class="px-4 py-4 text-center ${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle border-r border-slate-200/50">
+                        ${systemBadge(r.horas_feriado_auto)} ${notionInput(r.horas_feriado_manager, 'horas_feriado_manager', diffFer)}
+                    </td>
+                    <td class="px-4 py-3 align-top">
+                        <input type="text" class="edit-input w-full bg-transparent border-none text-xs text-slate-600 focus:bg-white focus:ring-1 focus:ring-slate-200 p-1 rounded ${isDisabled ? 'disabled' : ''}" 
+                               data-id="${r.id}" data-field="comentarios" placeholder="Agregar comentario..." value="${r.comentarios || ''}">
+                        ${rowLevel === 'error' ? `<p class="text-[10px] text-red-500 font-bold mt-1 uppercase">⚠ ${errorReason}</p>` : 
+                          rowLevel === 'warning' ? `<p class="text-[10px] text-amber-600 font-bold mt-1 uppercase">⚠ ${warningReason}</p>` : ''}
+                    </td>
+                `;
+                weekTbody.appendChild(tr);
+            } else {
+                // CARD (MOBILE)
+                const card = document.createElement('div');
+                card.className = `p-4 ${rowClass} ${tdFirstClass} flex flex-col gap-3`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="font-black text-slate-800 text-lg">${dias[diaInt]} ${r.fecha.split('-').reverse().join('/')}</span>
+                            <div class="flex flex-wrap gap-2 mt-1">
+                                ${isFeriado ? `<span class="text-[9px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold uppercase">🎉 ${nombreFeriado}</span>` : ''}
+                                ${r.ausencias ? `<span class="text-[9px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold uppercase">📋 ${r.ausencias}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Fichada</span>
+                            <span class="font-bold text-slate-600">${actIngreso || '-'} a ${actSalida || '-'}</span>
+                        </div>
                     </div>
-                </td>
-                <td class="px-4 py-4 text-center font-semibold text-slate-600 align-middle">${actIngreso || '-'}</td>
-                <td class="px-4 py-4 text-center font-semibold text-slate-600 align-middle border-r border-slate-200/50">${actSalida || '-'}</td>
-                <td class="px-4 py-4 text-center ${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle">
-                    ${systemBadge(r.horas_50_auto)} ${notionInput(r.horas_50_manager, 'horas_50_manager', diff50)}
-                </td>
-                <td class="px-4 py-4 text-center ${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle">
-                    ${systemBadge(r.horas_100_auto)} ${notionInput(r.horas_100_manager, 'horas_100_manager', diff100)}
-                </td>
-                <td class="px-4 py-4 text-center ${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle border-r border-slate-200/50">
-                    ${systemBadge(r.horas_feriado_auto)} ${notionInput(r.horas_feriado_manager, 'horas_feriado_manager', diffFer)}
-                </td>
 
-                <td class="px-4 py-3 align-top">
-                    <input type="text" class="edit-input w-full bg-transparent border-none text-xs text-slate-600 focus:bg-white focus:ring-1 focus:ring-slate-200 p-1 rounded ${isDisabled ? 'disabled' : ''}" 
-                           data-id="${r.id}" data-field="comentarios" placeholder="Agregar comentario..." value="${r.comentarios || ''}">
-                    ${rowLevel === 'error' ? `<p class="text-[10px] text-red-500 font-bold mt-1 uppercase">⚠ ${errorReason}</p>` : 
-                      rowLevel === 'warning' ? `<p class="text-[10px] text-amber-600 font-bold mt-1 uppercase">⚠ ${warningReason}</p>` : ''}
-                </td>
-            `;
-            weekTbody.appendChild(tr);
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-blue-50/50 p-2 rounded-lg">
+                            <span class="text-[9px] font-bold text-blue-600 uppercase block mb-1">Extra 50%</span>
+                            ${systemBadge(r.horas_50_auto)}
+                            ${notionInput(r.horas_50_manager, 'horas_50_manager', diff50)}
+                        </div>
+                        <div class="bg-blue-50/50 p-2 rounded-lg">
+                            <span class="text-[9px] font-bold text-blue-600 uppercase block mb-1">Extra 100%</span>
+                            ${systemBadge(r.horas_100_auto)}
+                            ${notionInput(r.horas_100_manager, 'horas_100_manager', diff100)}
+                        </div>
+                        <div class="bg-blue-50/50 p-2 rounded-lg">
+                            <span class="text-[9px] font-bold text-blue-600 uppercase block mb-1">Feriado</span>
+                            ${systemBadge(r.horas_feriado_auto)}
+                            ${notionInput(r.horas_feriado_manager, 'horas_feriado_manager', diffFer)}
+                        </div>
+                    </div>
+
+                    <div>
+                        <input type="text" class="edit-input w-full bg-slate-100/50 border-none text-sm text-slate-600 p-2 rounded-lg focus:bg-white focus:ring-2 focus:ring-slate-200" 
+                               data-id="${r.id}" data-field="comentarios" placeholder="Comentarios..." value="${r.comentarios || ''}">
+                        ${rowLevel === 'error' ? `<p class="text-[10px] text-red-500 font-bold mt-2 uppercase">⚠ ${errorReason}</p>` : 
+                          rowLevel === 'warning' ? `<p class="text-[10px] text-amber-600 font-bold mt-2 uppercase">⚠ ${warningReason}</p>` : ''}
+                    </div>
+                `;
+                weekCards.appendChild(card);
+            }
         });
+
+        listContainer.appendChild(weekBlock);
+    });
 
         listContainer.appendChild(weekBlock);
     });
