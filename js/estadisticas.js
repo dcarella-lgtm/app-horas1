@@ -340,6 +340,7 @@ function renderTabla() {
     }
 
     const tableWrapper = document.getElementById("stats-table-wrapper");
+    const cardsContainer = document.getElementById("stats-cards-container");
     const isMob = (typeof window.esMobile === 'function') ? window.esMobile() : (window.innerWidth < 768);
 
     if (filtrados.length === 0) {
