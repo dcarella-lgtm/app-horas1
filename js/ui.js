@@ -111,8 +111,7 @@ function renderRegistros(empleados) {
     console.log("[UI] Renderizando Dashboard...", empleados?.length);
     const kpiContainer = document.getElementById("kpi-container");
     const alertsContainer = document.getElementById("alerts-container");
-    const grid = document.getElementById("registros-grid");
-
+    
     if (!kpiContainer) return;
 
     try {
@@ -121,146 +120,108 @@ function renderRegistros(empleados) {
             return;
         }
 
-            const totalHoras = registros.reduce((acc, r) => acc + (Number(r.total_50||0) + Number(r.total_100||0) + Number(r.total_feriado||0)), 0);
+        // --- CÁLCULO DE MÉTRICAS GLOBALES ---
+        let totalH50 = 0, totalH100 = 0, totalFeriado = 0;
+        let pendientes = 0;
+        let rechazados = 0;
 
-            kpiContainer.innerHTML = `
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-red-500">
-                    <div class="flex justify-between items-start"><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Con errores</p><span class="bg-red-50 text-red-500 p-1.5 rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></span></div>
-                    <h3 class="text-3xl font-black text-slate-800 mt-2">${totalErrores}</h3>
-                    <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">Requieren atención inmediata</p>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-amber-500">
-                    <div class="flex justify-between items-start"><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">En revisión / Pend.</p><span class="bg-amber-50 text-amber-500 p-1.5 rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span></div>
-                    <h3 class="text-3xl font-black text-slate-800 mt-2">${totalRevision}</h3>
-                    <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">Pendientes de aprobación</p>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-emerald-500">
-                    <div class="flex justify-between items-start"><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Aprobados</p><span class="bg-emerald-50 text-emerald-500 p-1.5 rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></span></div>
-                    <h3 class="text-3xl font-black text-slate-800 mt-2">${totalAprobados}</h3>
-                    <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">Listos para liquidación</p>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-blue-600">
-                    <div class="flex justify-between items-start"><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Horas Totales</p><span class="bg-blue-50 text-blue-600 p-1.5 rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span></div>
-                    <h3 class="text-3xl font-black text-slate-800 mt-2">${(totalHoras || 0).toFixed(1)} <span class="text-lg font-bold text-slate-400">hs</span></h3>
-                    <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">Acumulado del periodo</p>
-                </div>
-            `;
-        }
+        empleados.forEach(e => {
+            totalH50 += Number(e.total_50 || 0);
+            totalH100 += Number(e.total_100 || 0);
+            totalFeriado += Number(e.total_feriado || 0);
+            if (e.estado === 'pendiente' || e.estado === 'revision') pendientes++;
+            if (e.estado === 'rechazado') rechazados++;
+        });
 
-        // 2. Alertas
-        const alertsContainer = document.getElementById('alerts-container');
+        // --- RENDER DE KPIs ---
+        kpiContainer.innerHTML = `
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group cursor-pointer" onclick="window.location.href='estadisticas.html'">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="p-3 bg-blue-50 rounded-2xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total 50%</span>
+                </div>
+                <div class="text-2xl font-black text-slate-800">${totalH50.toFixed(1)}<span class="text-sm font-bold text-slate-400 ml-1">hs</span></div>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group cursor-pointer" onclick="window.location.href='estadisticas.html'">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="p-3 bg-indigo-50 rounded-2xl text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total 100%</span>
+                </div>
+                <div class="text-2xl font-black text-slate-800">${totalH100.toFixed(1)}<span class="text-sm font-bold text-slate-400 ml-1">hs</span></div>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group cursor-pointer" onclick="window.location.href='estadisticas.html'">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="p-3 bg-purple-50 rounded-2xl text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Feriados</span>
+                </div>
+                <div class="text-2xl font-black text-slate-800">${totalFeriado.toFixed(1)}<span class="text-sm font-bold text-slate-400 ml-1">hs</span></div>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group cursor-pointer" onclick="window.location.href='estadisticas.html?estado=pendiente'">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="p-3 ${pendientes > 0 ? 'bg-amber-50 text-amber-600 group-hover:bg-amber-600' : 'bg-green-50 text-green-600 group-hover:bg-green-600'} rounded-2xl group-hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pendientes</span>
+                </div>
+                <div class="text-2xl font-black text-slate-800">${pendientes}<span class="text-sm font-bold text-slate-400 ml-1">por revisar</span></div>
+            </div>
+        `;
+
+        // --- RENDER DE ALERTAS ---
         if (alertsContainer) {
-            const cantErrores = registros.filter(r => r.estado === 'rechazado').length;
-            const cantWarnings = registros.filter(r => r.estado === 'pendiente' || r.estado === 'revision').length;
-            
-            if (cantErrores === 0 && cantWarnings === 0) {
-                alertsContainer.innerHTML = `<div class="flex items-center justify-center p-6 bg-slate-50 rounded-xl border border-dashed border-slate-200"><span class="text-emerald-600 font-bold text-lg flex items-center gap-2"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Sin alertas — todo listo para liquidar</span></div>`;
+            if (pendientes === 0 && rechazados === 0) {
+                alertsContainer.style.display = "none";
             } else {
-                let html = '<div class="flex flex-col gap-2">';
-                if (cantErrores > 0) {
-                    html += `
-                        <div onclick="window.location.href='estadisticas.html?estado=rechazado'" 
-                             class="flex items-center justify-between gap-3 p-3 rounded-lg bg-red-50 border border-red-100 text-red-700 shadow-sm cursor-pointer hover:bg-red-100 transition-all group">
-                            <div class="flex items-center gap-3">
-                                <span class="text-lg">🔴</span>
-                                <span class="font-semibold text-sm">${cantErrores} empleado(s) con inconsistencias críticas</span>
+                alertsContainer.style.display = "block";
+                alertsContainer.innerHTML = `
+                    <div class="flex flex-col gap-3">
+                        ${rechazados > 0 ? `
+                            <div class="flex items-center justify-between bg-red-50 border border-red-100 p-4 rounded-2xl cursor-pointer hover:bg-red-100 transition-colors" onclick="window.location.href='estadisticas.html?estado=rechazado'">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 bg-red-200 rounded-full flex items-center justify-center text-red-700">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-red-900">${rechazados} Empleados con rechazos</h4>
+                                        <p class="text-sm text-red-700 font-medium">Hay inconsistencias críticas que requieren corrección.</p>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                             </div>
-                            <span class="text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">VER PENDIENTES <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></span>
-                        </div>`;
-                }
-                if (cantWarnings > 0) {
-                    html += `
-                        <div onclick="window.location.href='estadisticas.html?estado=pendiente'" 
-                             class="flex items-center justify-between gap-3 p-3 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 shadow-sm cursor-pointer hover:bg-amber-100 transition-all group">
-                            <div class="flex items-center gap-3">
-                                <span class="text-lg">🟡</span>
-                                <span class="font-semibold text-sm">${cantWarnings} empleado(s) pendientes de revisión</span>
+                        ` : ''}
+                        
+                        ${pendientes > 0 ? `
+                            <div class="flex items-center justify-between bg-amber-50 border border-amber-100 p-4 rounded-2xl cursor-pointer hover:bg-amber-100 transition-colors" onclick="window.location.href='estadisticas.html?estado=pendiente'">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center text-amber-700">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-amber-900">${pendientes} Empleados pendientes</h4>
+                                        <p class="text-sm text-amber-700 font-medium">Hay registros esperando revisión.</p>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                             </div>
-                            <span class="text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">VER REVISIÓN <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></span>
-                        </div>`;
-                }
-                html += '</div>';
-                alertsContainer.innerHTML = html;
+                        ` : ''}
+                    </div>
+                `;
             }
-            alertsContainer.style.display = 'block';
         }
 
         toggleStates('', 'table');
 
-        // 3. Analytics
-        const analyticsContainer = document.getElementById('analytics-container');
-        if (analyticsContainer) {
-            let sum50 = 0, sum100 = 0, sumFer = 0;
-            registros.forEach(r => {
-                sum50 += Number(r.total_50 || 0);
-                sum100 += Number(r.total_100 || 0);
-                sumFer += Number(r.total_feriado || 0);
-            });
-            const totalH = sum50 + sum100 + sumFer;
-            const pct50 = totalH > 0 ? (sum50 / totalH * 100).toFixed(1) : 0;
-            const pct100 = totalH > 0 ? (sum100 / totalH * 100).toFixed(1) : 0;
-            const pctFer = totalH > 0 ? (sumFer / totalH * 100).toFixed(1) : 0;
-            
-            const sortedByHours = [...registros].map(r => ({...r, th: Number(r.total_50||0)+Number(r.total_100||0)+Number(r.total_feriado||0)}))
-                .sort((a,b) => b.th - a.th).slice(0, 5);
-                
-            let topHtml = '';
-            sortedByHours.forEach((r, i) => {
-                topHtml += `<div class="flex items-center justify-between p-2 border-b border-slate-50 last:border-0"><div class="flex items-center gap-3"><span class="font-bold text-slate-300 text-sm">${i+1}.</span><p class="text-sm font-bold text-slate-800">${r.nombre || '-'}</p></div><span class="text-sm font-black text-blue-600">${r.th.toFixed(1)} hs</span></div>`;
-            });
-
-            // Ranking problemas
-            const problemRecords = registros.filter(r => r.estado === 'rechazado' || r.estado === 'revision' || r.estado === 'pendiente');
-            const sortedProblems = problemRecords.sort((a,b) => {
-                if (a.estado === 'rechazado' && b.estado !== 'rechazado') return -1;
-                if (b.estado === 'rechazado' && a.estado !== 'rechazado') return 1;
-                return 0;
-            }).slice(0, 5);
-
-            let problemsHtml = '';
-            if (sortedProblems.length === 0) {
-                problemsHtml = `<div class="p-6 text-center h-full flex flex-col justify-center items-center gap-2"><span class="text-3xl">🏆</span><span class="text-sm font-bold text-emerald-600">Todo el equipo al día, sin problemas.</span></div>`;
-            } else {
-                sortedProblems.forEach(r => {
-                    problemsHtml += `
-                        <div class="flex items-center justify-between p-3 mb-2 bg-slate-50 rounded-lg border border-slate-100 hover:bg-slate-100/50 transition-colors">
-                            <div class="flex flex-col">
-                                <span class="font-bold text-slate-800 text-sm">${r.nombre || '-'}</span>
-                                <span class="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">${r.estado} en periodo</span>
-                            </div>
-                            <span class="text-lg">
-                                ${r.estado === 'rechazado' ? '🔴' : '🟡'}
-                            </span>
-                        </div>
-                    `;
-                });
-            }
-
-            analyticsContainer.innerHTML = `
-                <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 lg:col-span-2">
-                    <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2">Distribución de Horas Extras</h3>
-                    <div class="w-full h-8 flex rounded-xl overflow-hidden bg-slate-100 mb-4">
-                        <div style="width: ${pct50}%" class="bg-blue-500"></div><div style="width: ${pct100}%" class="bg-violet-500"></div><div style="width: ${pctFer}%" class="bg-emerald-500"></div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-4">
-                        <div><p class="text-[10px] font-bold text-slate-400">AL 50%</p><p class="text-xl font-black">${sum50.toFixed(1)} hs</p></div>
-                        <div><p class="text-[10px] font-bold text-slate-400">AL 100%</p><p class="text-xl font-black">${sum100.toFixed(1)} hs</p></div>
-                        <div><p class="text-[10px] font-bold text-slate-400">FERIADO</p><p class="text-xl font-black">${sumFer.toFixed(1)} hs</p></div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 h-full">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">Top 5 Horas Extras</h3>
-                    <div class="flex flex-col gap-1">${topHtml || 'No hay datos'}</div>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-100 h-full">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">Estado del equipo</h3>
-                    <div class="flex-1 flex flex-col mt-2">${problemsHtml}</div>
-                </div>
-            `;
-            analyticsContainer.style.display = 'grid';
-        }
     } catch (err) {
-        console.error("[UI] Error en render:", err);
+        console.error("[UI] Error renderizando dashboard:", err);
     }
 }
 
