@@ -207,6 +207,8 @@ function agruparPorSemana(registros) {
             obj[key] = semanas[key];
             return obj;
         }, {});
+}
+
 // Helper para detectar si estamos en móvil
 function esMobile() {
     return window.innerWidth < 768;
