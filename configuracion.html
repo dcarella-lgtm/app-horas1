@@ -117,7 +117,7 @@
             </div>
         </section>
 
-        <div class="grid grid-cols-2 gap-8 items-start">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
             
             <!-- Columna Izquierda: Feriados -->
             <div class="flex flex-col gap-8">
@@ -178,17 +178,7 @@
                         Feriados Personalizados
                     </h3>
                     <div id="config-loading" class="p-6 text-center text-gray-500">Buscando en Supabase...</div>
-                    <table class="corporate-table" id="feriados-table" style="display: none; width: 100%;">
-                        <thead>
-                            <tr>
-                                <th style="text-align: left;">Fecha</th>
-                                <th style="text-align: left;">Nombre</th>
-                                <th style="text-align: center;">Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="feriados-tbody">
-                        </tbody>
-                    </table>
+                    <div id="feriados-list-container" class="flex flex-col gap-3" style="display: none;"></div>
                     <div id="no-feriados-msg" class="hidden p-8 text-center text-gray-500 border border-dashed border-gray-300 rounded-lg mt-4" style="display: none;">
                         No has cargado feriados propios aún.
                     </div>

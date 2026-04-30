@@ -154,10 +154,27 @@ main {
 .badge.rechazado { background-color: #f8d7da; color: #842029; }
 .badge.revision { background-color: #fff3cd; color: #664d03; }
 
-/* Utilidades */
-.text-center { text-align: center !important; }
-.btn-action { background: #f8f9fa; color: #0d6efd; border: 1px solid #dee2e6; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: 0.2s; }
-.corporate-table tr:hover .btn-action { background: #0d6efd; color: white; border-color: #0d6efd; }
+/* Ajustes Responsive Finales */
+@media (max-width: 768px) {
+    body { font-size: 14px; }
+    main { padding: 1rem !important; }
+    .max-w-7xl { padding: 0 !important; }
+    
+    /* Evitar zoom en iOS y mejorar toque */
+    input, select, textarea {
+        font-size: 16px !important; 
+        min-height: 44px;
+    }
+    
+    /* Adaptar botones */
+    button { min-height: 44px; }
+}
+
+/* Scrollbar sutil para contenedores con overflow */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 /* Ajustes de Inputs para Mobile */
 input[type="date"], input[type="text"], input[type="number"], select {

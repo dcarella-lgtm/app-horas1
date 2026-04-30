@@ -51,6 +51,14 @@ async function init() {
     if (filtroSup) filtroSup.addEventListener("change", () => renderTabla());
     if (filtroEq) filtroEq.addEventListener("change", () => renderTabla());
 
+    // Escuchar cambios de tamaño para re-renderizar si es necesario
+    window.addEventListener('resize', () => {
+        clearTimeout(window.__resizeTimerStats);
+        window.__resizeTimerStats = setTimeout(() => {
+            if (_empleadosCache.length > 0) renderTabla();
+        }, 250);
+    });
+
     // Selector de modo supervisor
     const selectorSup = document.getElementById("selector-supervisor-activo");
     if (selectorSup) {
@@ -331,8 +339,12 @@ function renderTabla() {
         countEl.textContent = `${filtrados.length} de ${_empleadosCache.length} empleados`;
     }
 
+    const tableWrapper = document.getElementById("stats-table-wrapper");
+    const isMob = (typeof window.esMobile === 'function') ? window.esMobile() : (window.innerWidth < 768);
+
     if (filtrados.length === 0) {
-        table.style.display = "none";
+        if (tableWrapper) tableWrapper.style.display = "none";
+        if (cardsContainer) cardsContainer.style.display = "none";
         empty.style.display = "block";
         const emptyTitle = empty.querySelector("h3");
         const emptyDesc = empty.querySelector("p");
@@ -346,17 +358,20 @@ function renderTabla() {
         return;
     }
 
-    table.style.display = "table";
     empty.style.display = "none";
+    if (isMob) {
+        if (tableWrapper) tableWrapper.style.display = "none";
+        if (cardsContainer) {
+            cardsContainer.style.display = "flex";
+            cardsContainer.innerHTML = "";
+        }
+    } else {
+        if (tableWrapper) tableWrapper.style.display = "block";
+        if (table) table.style.display = "table";
+        if (cardsContainer) cardsContainer.style.display = "none";
+    }
 
     filtrados.forEach(emp => {
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-50 transition-colors cursor-pointer";
-        tr.onclick = (e) => {
-            if (e.target.closest("select, input, button")) return;
-            window.location.href = `empleado.html?legajo=${emp.legajo}`;
-        };
-
         const excedeH50 = emp.h50 > _configCache.limite_mensual_50;
         const excedeH100 = emp.h100 > _configCache.limite_mensual_100;
         const totalHoras = (emp.h50 + emp.h100).toFixed(1);
@@ -367,54 +382,86 @@ function renderTabla() {
 
         const cleanLegajo = String(emp.legajo).trim();
         const asig = _asignacionesCache[cleanLegajo];
-        if (cleanLegajo === "38630085") console.log("[DEBUG_ROW] Legajo 38630085:", asig);
-        
         const supActual = asig ? asig.supervisor : '';
         const eqActual = asig ? asig.equipo : '';
 
-        // Generar options para supervisor
-        let finalSups = [...listaSup];
-        if (supActual && !finalSups.includes(supActual)) finalSups.push(supActual);
-        
-        const supOptions = ['<option value="">-</option>']
-            .concat(finalSups.map(s => `<option value="${s}"${s === supActual ? ' selected' : ''}>${s}</option>`))
-            .join('');
+        const generateSelect = (list, actual, type, legajo) => {
+            let finalItems = [...list];
+            if (actual && !finalItems.includes(actual)) finalItems.push(actual);
+            const options = ['<option value="">-</option>']
+                .concat(finalItems.map(i => `<option value="${i}"${i === actual ? ' selected' : ''}>${i}</option>`))
+                .join('');
+            return `<select class="select-${type} w-full md:w-auto px-2 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 cursor-pointer" data-legajo="${legajo}">${options}</select>`;
+        };
 
-        // Generar options para equipo
-        let finalEqs = [...listaEq];
-        if (eqActual && !finalEqs.includes(eqActual)) finalEqs.push(eqActual);
+        const supSelect = generateSelect(listaSup, supActual, 'supervisor', emp.legajo);
+        const eqSelect = generateSelect(listaEq, eqActual, 'equipo', emp.legajo);
 
-        const eqOptions = ['<option value="">-</option>']
-            .concat(finalEqs.map(e => `<option value="${e}"${e === eqActual ? ' selected' : ''}>${e}</option>`))
-            .join('');
+        if (isMob) {
+            const card = document.createElement("div");
+            card.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-4 relative transition-all active:scale-[0.98]";
+            card.innerHTML = `
+                <div class="flex justify-between items-start gap-3">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" class="check-emp w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" data-legajo="${emp.legajo}">
+                        <div>
+                            <h4 class="font-black text-slate-800 text-base leading-tight">${emp.nombre}</h4>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 block">Legajo: ${emp.legajo}</span>
+                        </div>
+                    </div>
+                    <div class="text-right flex flex-col items-end gap-1">
+                        ${badgeHTML}
+                        <span class="font-black text-slate-700 text-sm">${totalHoras} hs</span>
+                    </div>
+                </div>
 
-        tr.innerHTML = `
-            <td class="px-6 py-4">
-                <input type="checkbox" class="check-emp w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" data-legajo="${emp.legajo}">
-            </td>
-            <td class="px-6 py-4"><span class="font-semibold text-slate-800">${emp.nombre}</span></td>
-            <td class="px-6 py-4"><span class="text-xs text-slate-400 font-medium">${emp.legajo}</span></td>
-            <td class="px-6 py-3">
-                <select class="select-supervisor px-2 py-1 rounded-md bg-white border border-slate-200 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 cursor-pointer" data-legajo="${emp.legajo}">
-                    ${supOptions}
-                </select>
-            </td>
-            <td class="px-6 py-3">
-                <select class="select-equipo px-2 py-1 rounded-md bg-white border border-slate-200 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 cursor-pointer" data-legajo="${emp.legajo}">
-                    ${eqOptions}
-                </select>
-            </td>
-            <td class="px-6 py-4 text-center">${badgeHTML}</td>
-            <td class="px-6 py-4 text-center font-semibold text-slate-700">${totalHoras} hs</td>
-            <td class="px-6 py-4 text-right">
-                <span class="text-blue-600 text-xs font-semibold hover:text-blue-800">Ver detalle \u2192</span>
-            </td>
-        `;
-        tbody.appendChild(tr);
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Supervisor</label>
+                        ${supSelect}
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Equipo</label>
+                        ${eqSelect}
+                    </div>
+                </div>
+
+                <div class="flex justify-center mt-1">
+                    <a href="empleado.html?legajo=${emp.legajo}" class="text-blue-600 text-xs font-black uppercase tracking-widest hover:text-blue-800 flex items-center gap-1">
+                        Ver detalle de horas <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
+                    </a>
+                </div>
+            `;
+            cardsContainer.appendChild(card);
+        } else {
+            const tr = document.createElement("tr");
+            tr.className = "hover:bg-slate-50 transition-colors cursor-pointer";
+            tr.onclick = (e) => {
+                if (e.target.closest("select, input, button, a")) return;
+                window.location.href = `empleado.html?legajo=${emp.legajo}`;
+            };
+            tr.innerHTML = `
+                <td class="px-6 py-4">
+                    <input type="checkbox" class="check-emp w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" data-legajo="${emp.legajo}">
+                </td>
+                <td class="px-6 py-4"><span class="font-semibold text-slate-800">${emp.nombre}</span></td>
+                <td class="px-6 py-4"><span class="text-xs text-slate-400 font-medium">${emp.legajo}</span></td>
+                <td class="px-6 py-3">${supSelect}</td>
+                <td class="px-6 py-3">${eqSelect}</td>
+                <td class="px-6 py-4 text-center">${badgeHTML}</td>
+                <td class="px-6 py-4 text-center font-semibold text-slate-700">${totalHoras} hs</td>
+                <td class="px-6 py-4 text-right">
+                    <a href="empleado.html?legajo=${emp.legajo}" class="text-blue-600 text-xs font-semibold hover:text-blue-800">Ver detalle \u2192</a>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
     });
 
+    const targetContainer = isMob ? cardsContainer : tbody;
+    
     // Escuchar cambios en checkboxes individuales
-    tbody.querySelectorAll(".check-emp").forEach(cb => {
+    targetContainer.querySelectorAll(".check-emp").forEach(cb => {
         cb.addEventListener("change", () => updateBulkBar());
     });
 
@@ -424,8 +471,12 @@ function renderTabla() {
     updateBulkBar();
 
     // Bind change events en selects (delegación evita duplicación)
-    bindSelectEvents(tbody);
+    bindSelectEvents(targetContainer);
 }
+
+// Reemplazar la versión vieja de renderTabla (limpiar hasta bindSelectEvents)
+const _placeholder = null;
+
 
 // ── Procesamiento de datos ─────────────────────────────────
 function procesarDatos(data) {

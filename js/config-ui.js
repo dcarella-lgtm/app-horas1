@@ -193,57 +193,67 @@ function renderStaticFeriados() {
         const nombre = feriados[fecha];
         const [y, m, d] = fecha.split('-');
         const fechaDisplay = d + '/' + m + '/' + y;
-        return '<div class="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">'
-            + '<div><span class="text-sm font-semibold text-gray-700">' + fechaDisplay + '</span>'
-            + '<span class="text-sm text-gray-500 ml-2">' + nombre + '</span></div>'
-            + '<span class="text-xs text-green-600 font-bold">Activo</span>'
-            + '</div>';
+        return `
+            <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                <div class="flex flex-col">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">${fechaDisplay}</span>
+                    <span class="text-sm font-semibold text-slate-700 leading-tight">${nombre}</span>
+                </div>
+                <span class="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">Activo</span>
+            </div>
+        `;
     }).join('');
 }
 window.renderStaticFeriados = renderStaticFeriados;
 
 async function refreshFeriadosList() {
     const loading = document.getElementById("config-loading");
-    const table = document.getElementById("feriados-table");
-    const tbody = document.getElementById("feriados-tbody");
+    const container = document.getElementById("feriados-list-container");
     const noMsg = document.getElementById("no-feriados-msg");
 
-    if (!tbody) return;
+    if (!container) return;
 
     try {
         const res = await window.obtenerFeriadosDB();
         if (loading) loading.style.display = "none";
 
         if (res.ok && res.data && res.data.length > 0) {
-            tbody.innerHTML = "";
-            if (table) table.style.display = "table";
+            container.innerHTML = "";
+            container.style.display = "flex";
             if (noMsg) noMsg.style.display = "none";
 
             res.data.forEach(f => {
                 if (f.nombre === "__LABORABLE__") return;
-                const tr = document.createElement("tr");
+                
                 const [y, m, d] = (f.fecha || '').split('-');
-                tr.innerHTML = '<td style="padding: 10px;">' + (d + '/' + m + '/' + y) + '</td>'
-                    + '<td style="padding: 10px;">' + f.nombre + '</td>'
-                    + '<td style="padding: 10px; text-align: center;">'
-                    + '<button class="btn-del-feriado text-red-500 hover:text-red-700" data-id="' + f.id + '" title="Eliminar">'
-                    + '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>'
-                    + '</button></td>';
-                tbody.appendChild(tr);
+                const fechaDisplay = d + '/' + m + '/' + y;
+                
+                const item = document.createElement("div");
+                item.className = "flex items-center justify-between bg-white p-4 rounded-xl border border-slate-100 shadow-sm transition-all hover:border-slate-200";
+                item.innerHTML = `
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${fechaDisplay}</span>
+                        <span class="text-sm font-bold text-slate-800">${f.nombre}</span>
+                    </div>
+                    <button class="btn-del-feriado p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" data-id="${f.id}" title="Eliminar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+                container.appendChild(item);
             });
 
-            tbody.querySelectorAll(".btn-del-feriado").forEach(btn => {
+            container.querySelectorAll(".btn-del-feriado").forEach(btn => {
                 btn.onclick = async () => {
                     const id = btn.dataset.id;
                     if (confirm('¿Eliminar este feriado personalizado?')) {
                         await window.eliminarFeriadoDB(id);
-                        await window.cargarFeriados();
+                        if (window.cargarFeriados) await window.cargarFeriados();
                         await refreshFeriadosList();
                     }
                 };
             });
         } else {
-            if (table) table.style.display = "none";
+            container.style.display = "none";
             if (noMsg) noMsg.style.display = "block";
         }
     } catch (e) {
