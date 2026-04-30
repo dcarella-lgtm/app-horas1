@@ -1,6 +1,6 @@
-import { obtenerFeriadosDB, agregarFeriadoDB, eliminarFeriadoDB, obtenerConfigRRHH, guardarConfigRRHH } from "./api.js";
-import { FERIADOS, cargarFeriados, getConfigRRHH, inicializarConfiguracion, getDetalleFeriado } from "./config.js";
-import { cargarListaSupervisores, guardarListaSupervisores, cargarListaEquipos, guardarListaEquipos } from "./asignaciones.js";
+// import { obtenerFeriadosDB, agregarFeriadoDB, eliminarFeriadoDB, obtenerConfigRRHH, guardarConfigRRHH } from "./api.js";
+// import { FERIADOS, cargarFeriados, getConfigRRHH, inicializarConfiguracion, getDetalleFeriado } from "./config.js";
+// import { cargarListaSupervisores, guardarListaSupervisores, cargarListaEquipos, guardarListaEquipos } from "./asignaciones.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     console.log("[Config-UI] DOM cargado, inicializando...");
@@ -16,8 +16,8 @@ async function init() {
         await refreshFeriadosList();
 
         // 3. Inicializar UI de Supervisores y Equipos
-        initSupervisoresUI();
-        initEquiposUI();
+        await initSupervisoresUI();
+        await initEquiposUI();
         
         console.log("[Config-UI] Inicialización completada.");
     } catch (err) {
@@ -226,10 +226,11 @@ function renderStaticFeriados() {
 }
 
 // ── Gestión de Supervisores ────────────────────────────────
-function initSupervisoresUI() {
+async function initSupervisoresUI() {
     const form = document.getElementById("form-supervisor");
     if (!form) return;
 
+    await sincronizarListasMaestras(); // Asegurar datos frescos
     renderListaSupervisores();
 
     form.addEventListener("submit", (e) => {
@@ -242,7 +243,7 @@ function initSupervisoresUI() {
         if (!lista.includes(nombre)) {
             lista.push(nombre);
             lista.sort();
-            guardarListaSupervisores(lista);
+            await guardarListaSupervisores(lista);
             renderListaSupervisores();
         }
         input.value = "";
@@ -279,7 +280,7 @@ function renderListaSupervisores() {
             if (confirm(`¿Eliminar al supervisor "${nombre}"?`)) {
                 let lista = cargarListaSupervisores();
                 lista = lista.filter(s => s !== nombre);
-                guardarListaSupervisores(lista);
+                await guardarListaSupervisores(lista);
                 renderListaSupervisores();
             }
         });
@@ -287,7 +288,7 @@ function renderListaSupervisores() {
 }
 
 // ── Gestión de Equipos ─────────────────────────────────────
-function initEquiposUI() {
+async function initEquiposUI() {
     const form = document.getElementById("form-equipo");
     if (!form) return;
 
@@ -303,7 +304,7 @@ function initEquiposUI() {
         if (!lista.includes(nombre)) {
             lista.push(nombre);
             lista.sort();
-            guardarListaEquipos(lista);
+            await guardarListaEquipos(lista);
             renderListaEquipos();
         }
         input.value = "";
@@ -340,7 +341,7 @@ function renderListaEquipos() {
             if (confirm(`¿Eliminar el equipo "${nombre}"?`)) {
                 let lista = cargarListaEquipos();
                 lista = lista.filter(e => e !== nombre);
-                guardarListaEquipos(lista);
+                await guardarListaEquipos(lista);
                 renderListaEquipos();
             }
         });

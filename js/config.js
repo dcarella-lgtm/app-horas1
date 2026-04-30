@@ -3,7 +3,7 @@
  * Aquí se definen los feriados y otras variables de negocio.
  */
 
-import { obtenerFeriadosDB, obtenerConfigRRHH } from "./api.js";
+// import { obtenerFeriadosDB, obtenerConfigRRHH } from "./api.js";
 
 // Lista de feriados nacionales Argentina 2026 (Backup estático)
 const FERIADOS_ESTATICOS = {
@@ -39,7 +39,7 @@ let CONFIG_RRHH_CACHE = {
 /**
  * Carga TODA la configuración (Feriados y RRHH)
  */
-export async function inicializarConfiguracion() {
+window.inicializarConfiguracion = async function() {
     console.log("[Config] Iniciando carga de configuración...");
     try {
         await Promise.allSettled([
@@ -52,7 +52,7 @@ export async function inicializarConfiguracion() {
     }
 }
 
-export async function cargarFeriados() {
+async function cargarFeriados() {
     try {
         const res = await obtenerFeriadosDB();
         if (res.ok && res.data) {
@@ -68,7 +68,7 @@ export async function cargarFeriados() {
     }
 }
 
-export async function cargarConfigRRHH() {
+async function cargarConfigRRHH() {
     try {
         const res = await obtenerConfigRRHH();
         if (res.ok && res.data) {
@@ -83,7 +83,7 @@ export async function cargarConfigRRHH() {
 /**
  * Verifica si una fecha es feriado y retorna su nombre.
  */
-export function getDetalleFeriado(fechaStr) {
+window.getDetalleFeriado = function(fechaStr) {
     if (!fechaStr) return null;
     
     // Prioridad 1: Base de datos (Dinamicos)
@@ -99,14 +99,14 @@ export function getDetalleFeriado(fechaStr) {
     return FERIADOS_ESTATICOS[fechaStr] || null;
 }
 
-export function getConfigRRHH() {
+window.getConfigRRHH = function() {
     return CONFIG_RRHH_CACHE;
 }
 
 /**
  * Analiza un registro para determinar si es una ausencia o una demora
  */
-export function analizarTipoEvento(registro) {
+window.analizarTipoEvento = function(registro) {
     const aus = String(registro.ausencias || "").toLowerCase();
     if (!aus || aus.trim() === "") return { tipo: 'ok', detalle: '' };
 
@@ -130,4 +130,4 @@ export function analizarTipoEvento(registro) {
     }
 }
 
-export const FERIADOS = FERIADOS_ESTATICOS;
+const FERIADOS = FERIADOS_ESTATICOS;

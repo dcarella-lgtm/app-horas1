@@ -90,7 +90,7 @@ function normalizeTime(val) {
  * Retorna una promesa con el JSON mapeado y limpiado.
  * @param {File} file Archivo Excel subido por el usuario
  */
-export function leerExcelProcesado(file) {
+window.leerExcelProcesado = function(file) {
     return new Promise((resolve, reject) => {
         if (!file) return reject(new Error("No se proporcionó ningún archivo."));
 
@@ -228,7 +228,7 @@ export function leerExcelProcesado(file) {
  * Utiliza la librería SheetJS inyectada en index.html
  * @param {Array<Object>} registros 
  */
-export function exportarExcelLiquidacion(registros) {
+window.exportarExcelLiquidacion = function(registros) {
     if (!registros || registros.length === 0) return;
 
     if (typeof window.XLSX === 'undefined') {

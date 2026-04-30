@@ -1,5 +1,5 @@
 // Módulo para manipulación del DOM y eventos de la interfaz
-import { getDetalleFeriado, analizarTipoEvento } from "./config.js";
+// import { getDetalleFeriado, analizarTipoEvento } from "./config.js";
 
 // Función unificada para ocultar todo y mostrar el estado deseado
 function toggleStates(prefix, state) {
@@ -39,7 +39,7 @@ function toggleStates(prefix, state) {
 }
 
 // Convertidor de decimal de Excel (0-1) a formato HH:mm (solo propósitos visuales)
-export function convertirHoraDecimal(valor) {
+function convertirHoraDecimal(valor) {
     if (valor === null || valor === undefined || valor === "" || valor === 0) return "-";
     
     let num = Number(valor);
@@ -66,12 +66,12 @@ export function convertirHoraDecimal(valor) {
     return `${hh}:${mm}`;
 }
 
-export function showLoading(isEmpleado = false) { toggleStates(isEmpleado ? 'emp' : '', 'loading'); }
-export function showEmpty(isEmpleado = false) { toggleStates(isEmpleado ? 'emp' : '', 'empty'); }
-export function showError(isEmpleado = false) { toggleStates(isEmpleado ? 'emp' : '', 'error'); }
+window.showLoading = function(isEmpleado = false) { toggleStates(isEmpleado ? 'emp' : '', 'loading'); }
+window.showEmpty = function(isEmpleado = false) { toggleStates(isEmpleado ? 'emp' : '', 'empty'); }
+window.showError = function(isEmpleado = false) { toggleStates(isEmpleado ? 'emp' : '', 'error'); }
 
 // Helper para agrupar registros por semana ISO (comienza lunes)
-export function agruparPorSemana(registros) {
+function agruparPorSemana(registros) {
     const semanas = {};
     
     registros.forEach(r => {
@@ -107,20 +107,20 @@ export function agruparPorSemana(registros) {
         }, {});
 }
 
-export function renderRegistros(registros) {
-    console.log("[UI] Renderizando registros...", registros?.length);
+function renderRegistros(empleados) {
+    console.log("[UI] Renderizando Dashboard...", empleados?.length);
+    const kpiContainer = document.getElementById("kpi-container");
+    const alertsContainer = document.getElementById("alerts-container");
+    const grid = document.getElementById("registros-grid");
+
+    if (!kpiContainer) return;
+
     try {
-        if (!registros || registros.length === 0) {
+        if (!empleados || empleados.length === 0) {
             showEmpty(false);
             return;
         }
 
-        // 1. KPIs
-        const kpiContainer = document.getElementById('kpi-container');
-        if (kpiContainer) {
-            const totalErrores = registros.filter(r => r.estado === 'rechazado').length;
-            const totalRevision = registros.filter(r => r.estado === 'revision' || r.estado === 'pendiente').length;
-            const totalAprobados = registros.filter(r => r.estado === 'aprobado').length;
             const totalHoras = registros.reduce((acc, r) => acc + (Number(r.total_50||0) + Number(r.total_100||0) + Number(r.total_feriado||0)), 0);
 
             kpiContainer.innerHTML = `
@@ -157,8 +157,28 @@ export function renderRegistros(registros) {
                 alertsContainer.innerHTML = `<div class="flex items-center justify-center p-6 bg-slate-50 rounded-xl border border-dashed border-slate-200"><span class="text-emerald-600 font-bold text-lg flex items-center gap-2"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Sin alertas — todo listo para liquidar</span></div>`;
             } else {
                 let html = '<div class="flex flex-col gap-2">';
-                if (cantErrores > 0) html += `<div class="flex items-center gap-3 p-3 rounded-lg bg-red-50 border border-red-100 text-red-700 shadow-sm"><span class="text-lg">🔴</span><span class="font-semibold text-sm">${cantErrores} empleado(s) con inconsistencias críticas</span></div>`;
-                if (cantWarnings > 0) html += `<div class="flex items-center gap-3 p-3 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 shadow-sm"><span class="text-lg">🟡</span><span class="font-semibold text-sm">${cantWarnings} empleado(s) pendientes de revisión</span></div>`;
+                if (cantErrores > 0) {
+                    html += `
+                        <div onclick="window.location.href='estadisticas.html?estado=rechazado'" 
+                             class="flex items-center justify-between gap-3 p-3 rounded-lg bg-red-50 border border-red-100 text-red-700 shadow-sm cursor-pointer hover:bg-red-100 transition-all group">
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg">🔴</span>
+                                <span class="font-semibold text-sm">${cantErrores} empleado(s) con inconsistencias críticas</span>
+                            </div>
+                            <span class="text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">VER PENDIENTES <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></span>
+                        </div>`;
+                }
+                if (cantWarnings > 0) {
+                    html += `
+                        <div onclick="window.location.href='estadisticas.html?estado=pendiente'" 
+                             class="flex items-center justify-between gap-3 p-3 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 shadow-sm cursor-pointer hover:bg-amber-100 transition-all group">
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg">🟡</span>
+                                <span class="font-semibold text-sm">${cantWarnings} empleado(s) pendientes de revisión</span>
+                            </div>
+                            <span class="text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">VER REVISIÓN <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></span>
+                        </div>`;
+                }
                 html += '</div>';
                 alertsContainer.innerHTML = html;
             }
@@ -244,7 +264,7 @@ export function renderRegistros(registros) {
     }
 }
 
-export function renderEmpleadoData(registros) {
+window.renderEmpleadoData = function(registros) {
     const container = document.getElementById('emp-semanas-container');
     if (!container) return; 
     
@@ -478,7 +498,7 @@ export function renderEmpleadoData(registros) {
 // ============================================================
 // GENERADOR DE FEEDBACK VISUAL (TOASTS) Módulo Exportable
 // ============================================================
-function showToast(message, type = 'info') {
+window.showToast = function(message, type = 'info') {
     let container = document.getElementById('toast-container');
     if (!container) {
         container = document.createElement('div');
@@ -531,5 +551,5 @@ function showToast(message, type = 'info') {
     }, 3500); 
 }
 
-// Exportación explícita al final del archivo para máxima compatibilidad ES
-export { showToast };
+// Exportación eliminada para compatibilidad file://
+// export { showToast };

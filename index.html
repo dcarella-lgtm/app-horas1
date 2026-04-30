@@ -31,7 +31,18 @@
     <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <script type="module" src="js/app.js" defer></script>
+    <script>
+      window.onerror = function(msg, url, lineNo, columnNo, error) {
+        alert("Error: " + msg + "\nScript: " + url + "\nLínea: " + lineNo);
+        return false;
+      };
+    </script>
+    <script src="js/api.js" defer></script>
+    <script src="js/config.js" defer></script>
+    <script src="js/excel.js" defer></script>
+    <script src="js/asignaciones.js" defer></script>
+    <script src="js/ui.js" defer></script>
+    <script src="js/app.js" defer></script>
 </head>
 <body>
     <header class="bg-white sticky top-0 z-50 shadow-sm">

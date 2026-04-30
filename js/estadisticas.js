@@ -1,11 +1,12 @@
-import { obtenerRegistros, obtenerConfigRRHH } from "./api.js";
-import { inicializarConfiguracion, analizarTipoEvento, getConfigRRHH } from "./config.js";
-import { cargarAsignaciones, actualizarAsignacion, cargarListaSupervisores, cargarListaEquipos, sincronizarAsignaciones } from "./asignaciones.js";
+// import { obtenerRegistros, obtenerConfigRRHH } from "./api.js";
+// import { inicializarConfiguracion, analizarTipoEvento, getConfigRRHH } from "./config.js";
+// import { cargarAsignaciones, actualizarAsignacion, cargarListaSupervisores, cargarListaEquipos, sincronizarAsignaciones } from "./asignaciones.js";
 
 // Cache de datos para filtrar sin re-fetch
 let _empleadosCache = [];
 let _configCache = null;
 let _asignacionesCache = {};
+let _filtroEstado = ""; // Filtro de estado activo (de URL o interacción)
 
 // ── Supervisor mode ────────────────────────────────────────
 const SUPERVISOR_KEY = "supervisorActivo";
@@ -24,6 +25,9 @@ function setSupervisorActivo(valor) {
 
 // ── Init ───────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
+    const params = new URLSearchParams(window.location.search);
+    _filtroEstado = params.get("estado") || "";
+    
     await inicializarConfiguracion();
     init();
 });
@@ -149,6 +153,7 @@ async function renderStats() {
     }
 
     const res = await obtenerRegistros({ fechaDesde, fechaHasta });
+    await sincronizarListasMaestras(); // Sincronizar listas (Supervisores/Equipos)
     _configCache = getConfigRRHH();
     _asignacionesCache = await sincronizarAsignaciones();
 
@@ -185,8 +190,8 @@ function poblarFiltros() {
     if (!selectSup || !selectEq) return;
 
     // 1. Obtener de la configuración (todos los disponibles)
-    const configSupervisores = JSON.parse(localStorage.getItem('lista_supervisores') || '[]');
-    const configEquipos = JSON.parse(localStorage.getItem('lista_equipos') || '[]');
+    const configSupervisores = cargarListaSupervisores();
+    const configEquipos = cargarListaEquipos();
 
     // 2. Obtener de los datos (por si hay alguno viejo no en config)
     const supsDeDatos = new Set();
@@ -239,7 +244,7 @@ function poblarSelectorSupervisor() {
     if (!selector) return;
 
     // 1. Obtener de la configuración
-    const configSupervisores = JSON.parse(localStorage.getItem('lista_supervisores') || '[]');
+    const configSupervisores = cargarListaSupervisores();
     
     // 2. Obtener de los datos (por si acaso)
     const supsDeDatos = new Set();
@@ -303,6 +308,13 @@ function renderTabla() {
     const countEl = document.getElementById("empleados-count");
 
     tbody.innerHTML = "";
+    
+    // Forzar carga desde window
+    const listaSup = (window.cargarListaSupervisores) ? window.cargarListaSupervisores() : ["Error"];
+    const listaEq = (window.cargarListaEquipos) ? window.cargarListaEquipos() : ["Error"];
+    
+    console.log("[DEBUG_LISTA] Supervisores:", listaSup);
+    console.log("[DEBUG_LISTA] Equipos:", listaEq);
 
     // En modo supervisor, forzar el filtro de supervisor
     const supActivo = getSupervisorActivo();
@@ -317,6 +329,11 @@ function renderTabla() {
 
         if (filtroSup && supervisor !== filtroSup) return false;
         if (filtroEq && equipo !== filtroEq) return false;
+        
+        // Filtro de estado (Consolidado)
+        if (_filtroEstado === "rechazado" && emp.estado !== "rechazado") return false;
+        if (_filtroEstado === "pendiente" && emp.estado !== "pendiente") return false;
+        
         return true;
     });
 
@@ -359,18 +376,19 @@ function renderTabla() {
             ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-50 text-red-700">Excedido</span>'
             : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-green-50 text-green-700">OK</span>';
 
-        const asig = _asignacionesCache[String(emp.legajo)];
+        const cleanLegajo = String(emp.legajo).trim();
+        const asig = _asignacionesCache[cleanLegajo];
+        if (cleanLegajo === "38630085") console.log("[DEBUG_ROW] Legajo 38630085:", asig);
+        
         const supActual = asig ? asig.supervisor : '';
         const eqActual = asig ? asig.equipo : '';
 
         // Generar options para supervisor
-        const listaSup = cargarListaSupervisores();
         const supOptions = ['<option value="">-</option>']
             .concat(listaSup.map(s => `<option value="${s}"${s === supActual ? ' selected' : ''}>${s}</option>`))
             .join('');
 
         // Generar options para equipo
-        const listaEq = cargarListaEquipos();
         const eqOptions = ['<option value="">-</option>']
             .concat(listaEq.map(e => `<option value="${e}"${e === eqActual ? ' selected' : ''}>${e}</option>`))
             .join('');
@@ -432,7 +450,8 @@ function procesarDatos(data) {
                 ausencias: 0,
                 demoras: 0,
                 h50: 0,
-                h100: 0
+                h100: 0,
+                estado: 'aprobado' // Estado base
             };
         }
 
@@ -454,6 +473,13 @@ function procesarDatos(data) {
         result.totalH100 += h100;
         emp.h50 += h50;
         emp.h100 += h100;
+
+        // Consolidar estado del empleado (Jerarquía: rechazado > pendiente > aprobado)
+        if (r.estado === 'rechazado') {
+            emp.estado = 'rechazado';
+        } else if ((r.estado === 'pendiente' || r.estado === 'revision') && emp.estado !== 'rechazado') {
+            emp.estado = 'pendiente';
+        }
     });
 
     return result;

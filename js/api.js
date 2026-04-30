@@ -3,11 +3,17 @@
 // ============================================================
 // CONFIGURACIÓN — Reemplazar con tus credenciales reales
 // ============================================================
-const supabaseUrl = "https://edfrbxgzeknkqrzscgqk.supabase.co";
-const supabaseKey = "sb_publishable_EzjcSjadXXDzh0SI35zxmA_pbHzaw-T";
+var supabaseUrl = "https://edfrbxgzeknkqrzscgqk.supabase.co";
+var supabaseKey = "sb_publishable_EzjcSjadXXDzh0SI35zxmA_pbHzaw-T";
 
-const { createClient } = window.supabase;
-const supabase = createClient(supabaseUrl, supabaseKey);
+var supabase;
+
+try {
+    if (window.supabase) {
+        supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        console.log("[API] Supabase inicializado.");
+    }
+} catch (e) { console.error(e); }
 
 // ============================================================
 // INSERTAR REGISTROS
@@ -19,7 +25,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
  * @param {Array<Object>} registros - Array de objetos mapeados desde el Excel
  * @returns {Object} { ok: boolean, insertados: number, error: string|null }
  */
-export async function insertarRegistros(registros) {
+window.insertarRegistros = async function(registros) {
     if (!registros || registros.length === 0) {
         console.warn("[API] No hay registros para insertar.");
         return { ok: false, insertados: 0, error: "Array vacío" };
@@ -78,7 +84,7 @@ export async function insertarRegistros(registros) {
  * @param {Array<Object>} registros
  * @returns {Object} { ok: boolean, procesados: number, error: string|null }
  */
-export async function upsertRegistros(registros) {
+window.upsertRegistros = async function(registros) {
     if (!registros || registros.length === 0) {
         console.warn("[API] No hay registros para upsert.");
         return { ok: false, procesados: 0, error: "Array vacío" };
@@ -135,7 +141,7 @@ export async function upsertRegistros(registros) {
  * @param {Object} filtros - { legajo?, fechaDesde?, fechaHasta?, estado? }
  * @returns {Object} { ok: boolean, data: Array, error: string|null }
  */
-export async function obtenerRegistros(filtros = {}) {
+window.obtenerRegistros = async function(filtros = {}) {
     try {
         let query = supabase
             .from("registros_diarios")
@@ -178,7 +184,7 @@ export async function obtenerRegistros(filtros = {}) {
 /**
  * Obtiene la lista de feriados personalizados desde Supabase.
  */
-export async function obtenerFeriadosDB() {
+window.obtenerFeriadosDB = async function() {
     try {
         const { data, error } = await supabase
             .from("feriados")
@@ -196,7 +202,7 @@ export async function obtenerFeriadosDB() {
 /**
  * Agrega un nuevo feriado a la base de datos.
  */
-export async function agregarFeriadoDB(fecha, nombre) {
+window.agregarFeriadoDB = async function(fecha, nombre) {
     try {
         const { data, error } = await supabase
             .from("feriados")
@@ -214,7 +220,7 @@ export async function agregarFeriadoDB(fecha, nombre) {
 /**
  * Elimina un feriado por su ID.
  */
-export async function eliminarFeriadoDB(id) {
+window.eliminarFeriadoDB = async function(id) {
     try {
         const { error } = await supabase
             .from("feriados")
@@ -236,7 +242,7 @@ export async function eliminarFeriadoDB(id) {
 /**
  * Obtiene la configuración de límites y horarios de RRHH.
  */
-export async function obtenerConfigRRHH() {
+window.obtenerConfigRRHH = async function() {
     try {
         const { data, error } = await supabase
             .from("config_rrhh")
@@ -255,7 +261,7 @@ export async function obtenerConfigRRHH() {
 /**
  * Guarda o actualiza la configuración de RRHH.
  */
-export async function guardarConfigRRHH(config) {
+window.guardarConfigRRHH = async function(config) {
     try {
         const { data, error } = await supabase
             .from("config_rrhh")
@@ -273,7 +279,7 @@ export async function guardarConfigRRHH(config) {
  * Obtiene la fecha del registro más reciente para mostrar "Última actualización".
  * @returns {Object} { ok: boolean, fecha: string|null }
  */
-export async function obtenerUltimaFechaCarga() {
+window.obtenerUltimaFechaCarga = async function() {
     try {
         const { data, error } = await supabase
             .from("registros_diarios")
@@ -296,7 +302,7 @@ export async function obtenerUltimaFechaCarga() {
 /**
  * Obtiene todas las asignaciones de legajos desde Supabase.
  */
-export async function obtenerAsignacionesDB() {
+window.obtenerAsignacionesDB = async function() {
     try {
         const { data, error } = await supabase
             .from("config_asignaciones")
@@ -314,7 +320,7 @@ export async function obtenerAsignacionesDB() {
  * Guarda o actualiza una asignación específica.
  * @param {Object} asignacion - { legajo, supervisor?, equipo? }
  */
-export async function guardarAsignacionDB(asignacion) {
+window.guardarAsignacionDB = async function(asignacion) {
     try {
         const { data, error } = await supabase
             .from("config_asignaciones")
@@ -325,6 +331,39 @@ export async function guardarAsignacionDB(asignacion) {
         return { ok: true, data: data[0] };
     } catch (err) {
         console.error("[API] Error al guardar asignación:", err.message);
+        return { ok: false, error: err.message };
+    }
+}
+
+/**
+ * Obtiene las listas maestras (supervisores/equipos) de Supabase.
+ */
+window.obtenerListasDB = async function() {
+    try {
+        const { data, error } = await supabase
+            .from("config_listas")
+            .select("*");
+        if (error) throw error;
+        return { ok: true, data };
+    } catch (err) {
+        console.error("[API] Error al obtener listas:", err.message);
+        return { ok: false, data: [] };
+    }
+}
+
+/**
+ * Guarda una lista maestra en Supabase.
+ */
+window.guardarListasDB = async function(id, valores) {
+    try {
+        const { data, error } = await supabase
+            .from("config_listas")
+            .upsert([{ id, valores, updated_at: new Date().toISOString() }])
+            .select();
+        if (error) throw error;
+        return { ok: true, data: data[0] };
+    } catch (err) {
+        console.error("[API] Error al guardar lista:", err.message);
         return { ok: false, error: err.message };
     }
 }
