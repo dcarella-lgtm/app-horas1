@@ -6,21 +6,60 @@
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("[App] DOM Cargado. Iniciando configuración...");
   
-  // 0. Marcar link activo en nav
-  const currentPath = window.location.pathname;
-  document.querySelectorAll('nav a').forEach(a => {
-      const href = a.getAttribute('href');
-      if (currentPath.endsWith(href) || (currentPath.endsWith('/') && href === 'index.html')) {
-          a.classList.add('active');
-      }
-  });
-
   try {
     await inicializarConfiguracion(); 
+    await initSupervisorMode(); // Gestión global de modo supervisor
     initHeaderInfo(); // Cargar info de última actualización
     console.log("[App] Configuración inicializada con éxito.");
   } catch (err) {
     console.error("[App] Fallo crítico al inicializar configuración:", err);
+  }
+
+  async function initSupervisorMode() {
+      const currentPath = window.location.pathname;
+      const isIndex = currentPath.endsWith('index.html') || currentPath.endsWith('/');
+      const isEstadisticas = currentPath.endsWith('estadisticas.html');
+      const isConfig = currentPath.endsWith('configuracion.html');
+      const isEmpleado = currentPath.endsWith('empleado.html');
+
+      // 1. Marcar link activo
+      document.querySelectorAll('nav a.nav-link').forEach(a => {
+          const href = a.getAttribute('href');
+          const activeClasses = ['text-blue-600', 'border-blue-500', 'font-semibold'];
+          const inactiveClasses = ['text-slate-500', 'border-transparent', 'font-medium'];
+
+          const isActive = (href === 'index.html' && isIndex) || 
+                           (href === 'estadisticas.html' && (isEstadisticas || isEmpleado)) ||
+                           (href === 'configuracion.html' && isConfig);
+
+          if (isActive) {
+              a.classList.remove(...inactiveClasses);
+              a.classList.add(...activeClasses);
+          } else {
+              a.classList.remove(...activeClasses);
+              a.classList.add(...inactiveClasses);
+          }
+      });
+
+      // 2. Banner Global
+      const supervisor = window.getSupervisorActivo ? window.getSupervisorActivo() : "";
+      const banner = document.getElementById('supervisor-banner');
+      const nameSpan = document.getElementById('supervisor-name-banner');
+      const btnSalir = document.getElementById('btn-salir-supervisor-global');
+
+      if (supervisor && banner) {
+          banner.style.display = 'flex';
+          if (nameSpan) nameSpan.innerText = supervisor;
+          
+          if (btnSalir) {
+              btnSalir.onclick = () => {
+                  window.setSupervisorActivo('');
+                  window.location.reload();
+              };
+          }
+      } else if (banner) {
+          banner.style.display = 'none';
+      }
   }
 
   // ==========================================
@@ -144,7 +183,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       const response = await obtenerRegistros();
       if (response.ok) {
-        allRecords = response.data;
+        let records = response.data;
+
+        // FILTRADO POR SUPERVISOR ACTIVO (Fase C)
+        const supervisorActivo = window.getSupervisorActivo ? window.getSupervisorActivo() : "";
+        if (supervisorActivo) {
+            console.log("[App] Modo Supervisor Activo: Filtrando dashboard por", supervisorActivo);
+            const asignaciones = window.sincronizarAsignaciones ? await window.sincronizarAsignaciones() : {};
+            records = records.filter(r => {
+                const asig = asignaciones[r.legajo];
+                return asig && asig.supervisor === supervisorActivo;
+            });
+            
+            // Si no hay registros para ese supervisor, mostrar mensaje
+            if (records.length === 0) {
+                const emptyState = document.getElementById('empty-state');
+                if (emptyState) {
+                    emptyState.style.display = 'block';
+                    const emptyTitle = emptyState.querySelector('h3');
+                    if (emptyTitle) emptyTitle.innerText = "No hay registros para tu equipo";
+                }
+            }
+        }
+
+        allRecords = records;
         
         const dashboardFilters = document.getElementById("dashboard-filters");
         if (dashboardFilters) dashboardFilters.style.display = 'flex';

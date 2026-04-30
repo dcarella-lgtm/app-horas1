@@ -106,3 +106,20 @@ window.analizarTipoEvento = function(registro) {
     }
     return esDemora ? { tipo: 'demora', detalle: registro.ausencias } : { tipo: 'ausencia', detalle: registro.ausencias };
 }
+
+// ── Gestión de Supervisor Activo (Global) ──────────────────
+const SUPERVISOR_KEY = "supervisorActivo";
+
+window.getSupervisorActivo = function() {
+    return localStorage.getItem(SUPERVISOR_KEY) || "";
+};
+
+window.setSupervisorActivo = function(valor) {
+    if (valor) {
+        localStorage.setItem(SUPERVISOR_KEY, valor);
+    } else {
+        localStorage.removeItem(SUPERVISOR_KEY);
+    }
+    // Notificar a otras partes de la app si es necesario
+    window.dispatchEvent(new Event('supervisorChanged'));
+};

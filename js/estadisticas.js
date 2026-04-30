@@ -8,20 +8,9 @@ let _configCache = null;
 let _asignacionesCache = {};
 let _filtroEstado = ""; // Filtro de estado activo (de URL o interacción)
 
-// ── Supervisor mode ────────────────────────────────────────
-const SUPERVISOR_KEY = "supervisorActivo";
-
-function getSupervisorActivo() {
-    return localStorage.getItem(SUPERVISOR_KEY) || "";
-}
-
-function setSupervisorActivo(valor) {
-    if (valor) {
-        localStorage.setItem(SUPERVISOR_KEY, valor);
-    } else {
-        localStorage.removeItem(SUPERVISOR_KEY);
-    }
-}
+// ── Supervisor mode (Globales en config.js) ─────────────────
+// getSupervisorActivo()
+// setSupervisorActivo(valor)
 
 // ── Init ───────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
@@ -268,7 +257,7 @@ function poblarSelectorSupervisor() {
 
 // ── Aplicar modo supervisor (UI adaptativa) ────────────────
 function aplicarModoSupervisor() {
-    const supActivo = getSupervisorActivo();
+    const supActivo = window.getSupervisorActivo ? window.getSupervisorActivo() : "";
     const titulo = document.getElementById("page-title");
     const subtitulo = document.getElementById("page-subtitle");
     const btnSalir = document.getElementById("btn-salir-supervisor");
