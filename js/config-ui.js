@@ -7,11 +7,15 @@ async function initConfigUI() {
     if (typeof renderStaticFeriados === "function") renderStaticFeriados();
 
     // 2. Cargar parámetros generales
-    const params = await window.obtenerConfiguracion();
+    const params = window.obtenerConfiguracion ? window.obtenerConfiguracion() : (window.getConfigRRHH ? window.getConfigRRHH() : null);
     if (params) {
-        document.getElementById("input-horas-mes").value = params.horas_mes_base || 160;
-        document.getElementById("input-valor-hora").value = params.valor_hora_base || 0;
-        document.getElementById("input-keywords").value = params.keywords_demoras || "menor jornada, tarde, demora";
+        const input50 = document.getElementById("limit-50");
+        const input100 = document.getElementById("limit-100");
+        const inputKw = document.getElementById("keywords-demora");
+        
+        if (input50) input50.value = params.limite_mensual_50 || 40;
+        if (input100) input100.value = params.limite_mensual_100 || 20;
+        if (inputKw) inputKw.value = params.palabras_clave_demora || "menor jornada, tarde, demora";
     }
 
     // 3. Inicializar secciones de listas
