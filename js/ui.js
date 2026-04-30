@@ -146,14 +146,241 @@ window.renderRegistros = renderRegistros;
 
 window.renderEmpleadoData = function(registros) {
     const container = document.getElementById('emp-semanas-container');
-    if (!container || !registros || registros.length === 0) return;
+    if (!container) return; 
+    
+    if (!registros || registros.length === 0) {
+        showEmpty(true);
+        return;
+    }
+
     const title = document.getElementById('empleado-legajo-title');
     if (title) title.innerText = `${registros[0].nombre} (${registros[0].legajo})`;
+
     toggleStates('emp', 'table');
+    
+    // Guardar copia global
     window.__currentEmpleadoRecords = registros;
+    
+    const todosAprobados = registros.every(r => r.estado === 'aprobado');
+    let estadoGeneral = 'pendiente';
+    if (todosAprobados) estadoGeneral = 'aprobado';
+    else if (registros.some(r => r.estado === 'rechazado')) estadoGeneral = 'rechazado';
+    else if (registros.some(r => r.estado === 'revision')) estadoGeneral = 'revision';
+
+    const estadoBadge = document.getElementById('empleado-estado-badge');
+    const btnAprobar = document.getElementById('btn-aprobar-empleado');
+    const btnGuardar = document.getElementById('btn-guardar-empleado');
+
+    if (estadoBadge) {
+        let colorClass = 'bg-slate-100 text-slate-600';
+        if (estadoGeneral === 'aprobado') colorClass = 'bg-emerald-100 text-emerald-700';
+        else if (estadoGeneral === 'rechazado') colorClass = 'bg-red-100 text-red-700';
+        else if (estadoGeneral === 'revision') colorClass = 'bg-amber-100 text-amber-700';
+
+        estadoBadge.innerText = estadoGeneral.toUpperCase();
+        estadoBadge.className = `text-xs font-bold rounded-full px-3 py-1 ${colorClass}`;
+        estadoBadge.style = ''; // Limpiar inline anterior
+    }
+
+    if (btnAprobar) btnAprobar.style.display = todosAprobados ? 'none' : 'inline-flex';
+    if (btnGuardar) btnGuardar.style.display = todosAprobados ? 'none' : 'inline-flex';
+
+    const isDisabled = todosAprobados;
+    let __empRowErrors = 0;
+    let __empRowWarnings = 0;
+
+    const semanas = agruparPorSemana(registros);
     const listContainer = container;
-    listContainer.innerHTML = 'Cargando semanas...';
-    // (Resto de lógica de renderEmpleadoData omitida por brevedad, se mantiene igual)
+    listContainer.innerHTML = '';
+    listContainer.className = 'flex flex-col gap-8 mt-2';
+
+    Object.keys(semanas).forEach(weekKey => {
+        const weekData = semanas[weekKey];
+        const weekBlock = document.createElement('div');
+        weekBlock.className = 'bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden';
+        
+        // Header de Semana
+        const firstDay = weekData.registros[0].fecha.split('-').reverse().join('/');
+        const lastDay = weekData.registros[weekData.registros.length - 1].fecha.split('-').reverse().join('/');
+        
+        weekBlock.innerHTML = `
+            <div class="bg-slate-50/50 px-6 py-3 border-bottom border-slate-100 flex justify-between items-center sticky top-0 z-10 backdrop-blur-sm">
+                <h3 class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wider">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    Semana ${weekData.weekNo} <span class="text-slate-400 font-normal ml-2">(${firstDay} — ${lastDay})</span>
+                </h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm border-separate border-spacing-0">
+                    <thead>
+                        <tr class="bg-slate-50/30">
+                            <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Día / Fecha</th>
+                            <th class="px-4 py-2 text-center text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Entrada</th>
+                            <th class="px-4 py-2 text-center text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100 border-r border-slate-100">Salida</th>
+                            <th class="px-4 py-2 text-center text-[10px] font-bold text-blue-400 uppercase border-b border-slate-100 bg-blue-50/30">50%</th>
+                            <th class="px-4 py-2 text-center text-[10px] font-bold text-blue-400 uppercase border-b border-slate-100 bg-blue-50/30">100%</th>
+                            <th class="px-4 py-2 text-center text-[10px] font-bold text-blue-400 uppercase border-b border-slate-100 border-r border-slate-100 bg-blue-50/30">Feriado</th>
+                            <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Feedback Manager</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50" id="tbody-${weekKey}"></tbody>
+                </table>
+            </div>
+        `;
+        
+        const weekTbody = weekBlock.querySelector(`#tbody-${weekKey}`);
+        
+        weekData.registros.forEach(r => {
+            const tr = document.createElement('tr');
+            
+            // Lógica de fecha y feriado
+            const temp = new Date(r.fecha + 'T12:00:00');
+            const diaInt = temp.getDay();
+            const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            const isWeekend = diaInt === 0 || diaInt === 6;
+            // Manejar compatibilidad si getDetalleFeriado no está definido globalmente en este contexto
+            let nombreFeriado = null;
+            if (typeof window.getDetalleFeriado === 'function') {
+                nombreFeriado = window.getDetalleFeriado(r.fecha);
+            } else if (window.FERIADOS_DINAMICOS || window.FERIADOS_ESTATICOS) {
+                const todosFeriados = { ...(window.FERIADOS_ESTATICOS || {}), ...(window.FERIADOS_DINAMICOS || {}) };
+                if (todosFeriados[r.fecha] && todosFeriados[r.fecha] !== '__LABORABLE__') {
+                    nombreFeriado = todosFeriados[r.fecha];
+                }
+            }
+            const isFeriado = nombreFeriado !== null;
+
+            const actIngreso = r.hora_ingreso && r.hora_ingreso !== 0 ? convertirHoraDecimal(r.hora_ingreso) : null;
+            const actSalida = r.hora_salida && r.hora_salida !== 0 ? convertirHoraDecimal(r.hora_salida) : null;
+            const isNoActivity = !actIngreso && !actSalida;
+
+            // Validaciones
+            const diff50 = Number(r.horas_50_auto || 0) !== Number(r.horas_50_manager || 0);
+            const diff100 = Number(r.horas_100_auto || 0) !== Number(r.horas_100_manager || 0);
+            const diffFer = Number(r.horas_feriado_auto || 0) !== Number(r.horas_feriado_manager || 0);
+            const hasDiff = diff50 || diff100 || diffFer;
+            
+            const isMissingPunch = (actIngreso && !actSalida) || (!actIngreso && actSalida);
+
+            let rowLevel = 'ok';
+            let errorReason = '';
+            let warningReason = '';
+
+            let isDemora = false;
+            if (typeof window.analizarTipoEvento === 'function') {
+                const evento = window.analizarTipoEvento(r);
+                isDemora = evento.tipo === 'demora';
+            }
+
+            const isAusenciaInvalida = !r.ausencias || r.ausencias.toUpperCase().includes('DETALLAR AUSENCIA');
+
+            if (isMissingPunch) {
+                rowLevel = 'error';
+                errorReason = 'Fichada Incompleta';
+                __empRowErrors++;
+            } else if (diaInt === 0 && Number(r.horas_50_manager || 0) > 0) {
+                rowLevel = 'error';
+                errorReason = 'Horas al 50% en Domingo';
+                __empRowErrors++;
+            } else if (hasDiff) {
+                rowLevel = 'warning';
+                warningReason = 'Modificado por Mánager';
+                __empRowWarnings++;
+            } else if (isDemora) {
+                rowLevel = 'warning';
+                warningReason = 'Demora / Menor Jornada';
+                __empRowWarnings++;
+            } else if (isNoActivity && isAusenciaInvalida && !isWeekend && !isFeriado) {
+                rowLevel = 'warning';
+                warningReason = 'Ausencia sin justificar';
+                __empRowWarnings++;
+            } else if (isFeriado && Number(r.horas_feriado_manager || 0) === 0 && !isNoActivity) {
+                rowLevel = 'warning';
+                warningReason = 'Feriado sin horas';
+                __empRowWarnings++;
+            } else if (isFeriado && (Number(r.horas_feriado_auto || 0) > 0 || Number(r.horas_feriado_manager || 0) > 0)) {
+                rowLevel = 'warning';
+                warningReason = 'Feriado Trabajado';
+                __empRowWarnings++;
+            }
+
+            const tdFirstClass = rowLevel === 'error' ? 'border-l-4 border-red-500' : rowLevel === 'warning' ? 'border-l-4 border-amber-500' : 'border-l-4 border-transparent';
+            const rowClass = rowLevel === 'error' ? 'bg-red-50/80 text-slate-800' : rowLevel === 'warning' ? 'bg-amber-50/80 text-slate-800' : 'hover:bg-slate-50 transition-colors opacity-60 hover:opacity-100 grayscale hover:grayscale-0';
+
+            const notionInput = (val, fieldId, isDiff = false) => {
+                const disabled = isDisabled ? 'disabled' : '';
+                let bgClass = 'bg-slate-100/50 border border-transparent text-slate-400 hover:bg-slate-200/50';
+                
+                if (rowLevel === 'error') {
+                    bgClass = isDiff ? 'bg-white border-2 border-red-500 text-red-700 shadow-md ring-2 ring-red-100' : 'bg-white/60 border border-red-200 text-red-900/50 hover:bg-white';
+                } else if (rowLevel === 'warning') {
+                    bgClass = isDiff ? 'bg-white border-2 border-amber-500 text-amber-800 shadow-md ring-2 ring-amber-200' : 'bg-white border-2 border-amber-300 text-amber-900 shadow-sm placeholder-amber-300';
+                }
+
+                return \`<input type="number" step="0.5" class="edit-input w-full rounded-lg px-2 py-1.5 text-center font-black focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all \${bgClass} \${disabled}" \n                        data-id="\${r.id}" data-field="\${fieldId}" value="\${val || 0}">\`;
+            };
+
+            const systemBadge = (val) => \`<span class="text-[9px] font-bold uppercase tracking-widest \${rowLevel === 'ok' ? 'text-slate-300' : 'text-slate-500'} block mb-1.5">Sist: \${val || 0}</span>\`;
+
+            tr.className = rowClass;
+            tr.innerHTML = \`
+                <td class="px-4 py-4 align-top \${tdFirstClass}">
+                    <div class="flex flex-col">
+                        <span class="font-black text-slate-700 text-base leading-none">\${dias[diaInt]}</span>
+                        <span class="text-[10px] text-slate-500 font-bold tracking-widest mt-1">\${r.fecha.split('-').reverse().join('/')}</span>
+                        \${isFeriado ? \`<span class="mt-2 text-[9px] bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-bold uppercase w-fit shadow-sm">🎉 \${nombreFeriado}</span>\` : ''}
+                        \${r.ausencias ? \`<span class="mt-2 text-[9px] bg-amber-100 text-amber-800 px-2 py-1 rounded-md font-bold uppercase w-fit shadow-sm border border-amber-200">📋 \${r.ausencias}</span>\` : ''}
+                    </div>
+                </td>
+                <td class="px-4 py-4 text-center font-semibold text-slate-600 align-middle">\${actIngreso || '-'}</td>
+                <td class="px-4 py-4 text-center font-semibold text-slate-600 align-middle border-r border-slate-200/50">\${actSalida || '-'}</td>
+                <td class="px-4 py-4 text-center \${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle">
+                    \${systemBadge(r.horas_50_auto)} \${notionInput(r.horas_50_manager, 'horas_50_manager', diff50)}
+                </td>
+                <td class="px-4 py-4 text-center \${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle">
+                    \${systemBadge(r.horas_100_auto)} \${notionInput(r.horas_100_manager, 'horas_100_manager', diff100)}
+                </td>
+                <td class="px-4 py-4 text-center \${rowLevel==='ok'?'bg-blue-50/20':'bg-blue-50/40'} align-middle border-r border-slate-200/50">
+                    \${systemBadge(r.horas_feriado_auto)} \${notionInput(r.horas_feriado_manager, 'horas_feriado_manager', diffFer)}
+                </td>
+
+                <td class="px-4 py-3 align-top">
+                    <input type="text" class="edit-input w-full bg-transparent border-none text-xs text-slate-600 focus:bg-white focus:ring-1 focus:ring-slate-200 p-1 rounded \${isDisabled ? 'disabled' : ''}" \n                           data-id="\${r.id}" data-field="comentarios" placeholder="Agregar comentario..." value="\${r.comentarios || ''}">
+                    \${rowLevel === 'error' ? \`<p class="text-[10px] text-red-500 font-bold mt-1 uppercase">⚠ \${errorReason}</p>\` : \n                      rowLevel === 'warning' ? \`<p class="text-[10px] text-amber-600 font-bold mt-1 uppercase">⚠ \${warningReason}</p>\` : ''}
+                </td>
+            \`;
+            weekTbody.appendChild(tr);
+        });
+
+        listContainer.appendChild(weekBlock);
+    });
+
+    const oldSecciones = document.getElementById('emp-semanas-container-old'); // Cleanup si existiera 
+
+    // Actualizar contadores
+    const counterBadge = document.getElementById('empleado-status-counters');
+    if (counterBadge) {
+        counterBadge.innerHTML = \`
+            <span class="inline-flex items-center gap-1.5 bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-red-100 \${__empRowErrors === 0 ? 'hidden' : ''}">
+                <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span> \${__empRowErrors} Error\${__empRowErrors>1?'es':''}
+            </span>
+            <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-amber-100 \${__empRowWarnings === 0 ? 'hidden' : ''}">
+                <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span> \${__empRowWarnings} Advertencia\${__empRowWarnings>1?'s':''}
+            </span>
+        \`;
+    }
+
+    if (btnAprobar && !isDisabled) {
+        if (__empRowErrors > 0) {
+            btnAprobar.disabled = true;
+            btnAprobar.className = "bg-slate-200 text-slate-400 px-5 py-2.5 rounded-lg font-bold cursor-not-allowed flex items-center gap-2";
+            btnAprobar.innerHTML = \`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> Resolver errores para aprobar\`;
+        } else {
+            btnAprobar.disabled = false;
+            btnAprobar.className = "bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-sm transition-all duration-150 ease-in-out flex items-center gap-2";
+            btnAprobar.innerHTML = \`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Aprobar Reporte\`;
+        }
+    }
 }
 
 window.showToast = function(message, type = 'info') {
