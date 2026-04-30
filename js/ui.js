@@ -144,6 +144,71 @@ function renderRegistros(empleados) {
 
 window.renderRegistros = renderRegistros;
 
+// Convertidor de decimal de Excel (0-1) a formato HH:mm (solo propósitos visuales)
+function convertirHoraDecimal(valor) {
+    if (valor === null || valor === undefined || valor === "" || valor === 0) return "-";
+    
+    let num = Number(valor);
+    if (isNaN(num)) return valor; 
+
+    // Si el número es mayor a 1, asumimos que se guardó como horas decimales (ej 8.5)
+    // Lo normalizamos a fracción Excel (0-1) para el cálculo visual
+    if (num > 1) {
+        num = num / 24;
+    }
+
+    // Excel guarda horas como fracción de un día (0 a 1)
+    const hoursFloat = num * 24;
+    const hours = Math.floor(hoursFloat);
+    const minsFloat = (hoursFloat - hours) * 60;
+    const mins = Math.round(minsFloat);
+    
+    // Si da exactamente 24h y no es acumulativo de días, usualmente redondeamos a 00
+    const calcH = hours >= 24 ? 0 : hours;
+
+    const hh = String(calcH).padStart(2, '0');
+    const mm = String(mins).padStart(2, '0');
+
+    return `${hh}:${mm}`;
+}
+
+// Helper para agrupar registros por semana ISO (comienza lunes)
+function agruparPorSemana(registros) {
+    const semanas = {};
+    
+    registros.forEach(r => {
+        const date = new Date(r.fecha + 'T12:00:00'); // Usar mediodía para evitar problemas de TZ
+        if (isNaN(date.getTime())) return;
+
+        // Cálculo de Semana ISO
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        
+        const year = d.getUTCFullYear();
+        const key = `${year}-W${weekNo}`;
+
+        if (!semanas[key]) {
+            semanas[key] = {
+                weekNo,
+                year,
+                registros: []
+            };
+        }
+        semanas[key].registros.push(r);
+    });
+
+    // Ordenar semanas cronológicamente
+    return Object.keys(semanas)
+        .sort()
+        .reduce((obj, key) => {
+            obj[key] = semanas[key];
+            return obj;
+        }, {});
+}
+
 window.renderEmpleadoData = function(registros) {
     const container = document.getElementById('emp-semanas-container');
     if (!container) return; 
