@@ -86,6 +86,10 @@ window.obtenerConfiguracion = function() {
     return CONFIG_RRHH_CACHE;
 }
 
+window.getConfigRRHH = function() {
+    return CONFIG_RRHH_CACHE;
+}
+
 window.analizarTipoEvento = function(registro) {
     const aus = String(registro.ausencias || "").toLowerCase();
     if (!aus || aus.trim() === "") return { tipo: 'ok', detalle: '' };
