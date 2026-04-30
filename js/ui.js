@@ -481,9 +481,6 @@ window.renderEmpleadoData = function(registros) {
         listContainer.appendChild(weekBlock);
     });
 
-        listContainer.appendChild(weekBlock);
-    });
-
     const oldSecciones = document.getElementById('emp-semanas-container-old'); // Cleanup si existiera 
 
     // Actualizar contadores
